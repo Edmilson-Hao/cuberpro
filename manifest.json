@@ -1,0 +1,18 @@
+{
+  "name": "CubeTrainer Pro",
+  "short_name": "CubeTrainer",
+  "description": "Treinador de algoritmos OLL e PLL para Cubo Mágico com timer inteligente.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme-color": "#121212",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "imagens/oll-caso-01.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
