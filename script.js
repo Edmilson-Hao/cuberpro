@@ -108,6 +108,11 @@ window.addEventListener('DOMContentLoaded', () => {
     renderizarTelas();
     
     document.getElementById('btn-clear-history').addEventListener('click', limparHistorico);
+    // Vincula a ação de clique do compartilhamento de dados
+    document.getElementById('btn-share-backup').addEventListener('click', compartilharDadosEBackup);
+
+    // Captura automática de dados recebidos por URL externa se houver transferência
+    processarBackupRecebido();
 });
 
 function initTheme() {
@@ -313,9 +318,14 @@ function checarConquistasERecordes(finalTime, oldBest, isFirstRecord, oldAo5, ol
 function renderizarValoresTimer(oldAo5 = null, oldAo12 = null) {
     const currentAo5 = calcularAoN(historicoTempos, 5);
     const currentAo12 = calcularAoN(historicoTempos, 12);
+    const currentAo50 = calcularAoN(historicoTempos, 50);
+    const currentAo100 = calcularAoN(historicoTempos, 100);
 
     const ao5El = document.getElementById('timer-ao5');
     const ao12El = document.getElementById('timer-ao12');
+    const ao50El = document.getElementById('timer-ao50');
+    const ao100El = document.getElementById('timer-ao100');
+    
     const trendAo5El = document.getElementById('trend-ao5');
     const trendAo12El = document.getElementById('trend-ao12');
 
@@ -331,10 +341,7 @@ function renderizarValoresTimer(oldAo5 = null, oldAo12 = null) {
                 trendAo5El.className = "trend-up";
             } else { trendAo5El.innerText = ""; }
         } else { trendAo5El.innerText = ""; }
-    } else {
-        ao5El.innerText = "-";
-        trendAo5El.innerText = "";
-    }
+    } else { ao5El.innerText = "-"; trendAo5El.innerText = ""; }
 
     if (currentAo12 !== null) {
         ao12El.innerText = currentAo12.toFixed(2) + "s";
@@ -348,10 +355,11 @@ function renderizarValoresTimer(oldAo5 = null, oldAo12 = null) {
                 trendAo12El.className = "trend-up";
             } else { trendAo12El.innerText = ""; }
         } else { trendAo12El.innerText = ""; }
-    } else {
-        ao12El.innerText = "-";
-        trendAo12El.innerText = "";
-    }
+    } else { ao12El.innerText = "-"; trendAo12El.innerText = ""; }
+
+    // RENDERIZAÇÃO DOS NOVOS COMPONENTES SOLICITADOS (Ao50 e Ao100)
+    if (ao50El) ao50El.innerText = currentAo50 !== null ? currentAo50.toFixed(2) + "s" : "-";
+    if (ao100El) ao100El.innerText = currentAo100 !== null ? currentAo100.toFixed(2) + "s" : "-";
 }
 
 function renderizarHistorico() {
@@ -360,13 +368,16 @@ function renderizarHistorico() {
     
     if (historicoTempos.length === 0) {
         container.innerHTML = `<div class="empty-state"><p>Nenhum tempo registrado.</p></div>`;
-        averagesSub.innerText = "ao5: - | ao12: -";
+        averagesSub.innerText = "ao5: - | ao12: - | ao50: - | ao100: -";
         return;
     }
 
     const curAo5 = calcularAoN(historicoTempos, 5);
     const curAo12 = calcularAoN(historicoTempos, 12);
-    averagesSub.innerText = `ao5: ${curAo5 ? curAo5.toFixed(2)+'s' : '-'} | ao12: ${curAo12 ? curAo12.toFixed(2)+'s' : '-'}`;
+    const curAo50 = calcularAoN(historicoTempos, 50);
+    const curAo100 = calcularAoN(historicoTempos, 100);
+    
+    averagesSub.innerText = `ao5: ${curAo5 ? curAo5.toFixed(2)+'s' : '-'} | ao12: ${curAo12 ? curAo12.toFixed(2)+'s' : '-'} | ao50: ${curAo50 ? curAo50.toFixed(2)+'s' : '-'} | ao100: ${curAo100 ? curAo100.toFixed(2)+'s' : '-'}`;
 
     const top12Melhores = [...historicoTempos]
         .sort((a, b) => a.tempo - b.tempo)
@@ -390,6 +401,7 @@ function renderizarHistorico() {
         </div>
     `).join('');
 
+    // Reconfigura os listeners de deleção e expansão padrão abaixo...
     document.querySelectorAll('.time-row-summary').forEach(summary => {
         summary.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-delete-time')) return;
@@ -407,6 +419,65 @@ function renderizarHistorico() {
             renderizarHistorico();
         });
     });
+}
+
+function compartilharDadosEBackup() {
+    try {
+        const pacoteDados = {
+            progresso: localStorage.getItem('cube_progresso') || "{}",
+            historico: localStorage.getItem('cube_historico_tempos') || "[]"
+        };
+        
+        // Compacta os objetos transformando-os em uma string Base64 segura para transporte em URL
+        const stringDados = btoa(unescape(encodeURIComponent(JSON.stringify(pacoteDados))));
+        const urlFinal = `${window.location.origin}${window.location.pathname}?backup=${stringDados}`;
+        
+        // Copia automaticamente para a Área de Transferência do Usuário
+        navigator.clipboard.writeText(urlFinal).then(() => {
+            alert("🚀 Link de Backup criado e copiado com sucesso!\n\nEnvie esse link para outro dispositivo ou guarde-o para restaurar seus dados quando quiser.");
+        }).catch(err => {
+            console.error("Falha ao copiar link de forma direta, exibindo em prompt alternativo", err);
+            prompt("Copie o link de exportação abaixo:", urlFinal);
+        });
+    } catch (e) {
+        alert("Erro ao processar a exportação de dados.");
+        console.error(e);
+    }
+}
+
+function processarBackupRecebido() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const backupBase64 = urlParams.get('backup');
+    
+    if (backupBase64) {
+        if (confirm("📥 Detectamos um link de dados externo compartilhado!\n\nDeseja importar estes tempos e históricos de progresso? Isso substituirá os dados locais atuais deste dispositivo.")) {
+            try {
+                const stringDecodificada = decodeURIComponent(escape(atob(backupBase64)));
+                const objetoDados = JSON.parse(stringDecodificada);
+                
+                if (objetoDados.progresso && objetoDados.historico) {
+                    localStorage.setItem('cube_progresso', objetoDados.progresso);
+                    localStorage.setItem('cube_historico_tempos', objetoDados.historico);
+                    
+                    // Sincroniza as variáveis de estado em tempo real
+                    progresso = JSON.parse(objetoDados.progresso);
+                    historicoTempos = JSON.parse(objetoDados.historico);
+                    
+                    alert("✅ Dados importados e sincronizados com sucesso!");
+                    
+                    // Limpa os parâmetros da URL para evitar laço infinito de importação ao recarregar a página
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    renderizarTelas();
+                }
+            } catch (err) {
+                alert("Falha crítica ao ler o link de backup. Certifique-se de que a URL não está corrompida.");
+                console.error(err);
+            }
+        } else {
+            // Se o usuário recusar, limpa a URL para uso limpo do sistema
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    }
 }
 
 function limparHistorico() {

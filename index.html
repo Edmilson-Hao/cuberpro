@@ -44,9 +44,11 @@
                 
                 <div class="timer-display" id="time-counter">0.00</div>
                 
-                <div class="timer-stats-row">
+                <div class="timer-stats-row" style="flex-wrap: wrap; justify-content: center; gap: 10px;">
                     <div class="stat-box">ao5: <span id="timer-ao5">-</span> <small id="trend-ao5"></small></div>
                     <div class="stat-box">ao12: <span id="timer-ao12">-</span> <small id="trend-ao12"></small></div>
+                    <div class="stat-box">ao50: <span id="timer-ao50">-</span></div>
+                    <div class="stat-box">ao100: <span id="timer-ao100">-</span></div>
                 </div>
             </div>
         </div>
@@ -63,10 +65,19 @@
         <div id="times-list-container"></div>
     </main>
 
-    <main class="main-content hidden" id="screen-manage">
-        <div class="stats-summary" id="manage-stats"></div>
+    <div id="screen-manage" class="main-content hidden">
+        <!-- Caixa de estatísticas existente -->
+        <div id="manage-stats" class="stats-card"></div>
+        
+        <!-- NOVO: Container de Ações de Backup do Sistema -->
+        <div style="margin: 15px; display: flex; gap: 10px;">
+            <button id="btn-share-backup" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                🔗 Compartilhar / Exportar Backup
+            </button>
+        </div>
+
         <div id="manage-list-container"></div>
-    </main>
+    </div>
 
     <nav>
         <button class="nav-btn active" data-target="screen-study">
@@ -91,20 +102,21 @@
         </button>
     </nav>
 </div>
-<div id="local-splash" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #1a233a; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s ease;">
-    <img src="imagens/splash.png" style="max-width: 80%; max-height: 80%; object-fit: contain;">
+
+<!-- Splash Screen Corrigida (Preenchimento Total e Fim da Duplicidade) -->
+<div id="local-splash" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a url('imagens/splash.png') no-repeat center center; background-size: cover; z-index: 9999; transition: opacity 0.4s ease;">
 </div>
 
 <script>
-    // Remove a splash screen nativa da tela após carregar o app
-    window.addEventListener('load', () => {
+    window.addEventListener('DOMContentLoaded', () => {
+        // Aguarda a renderização inicial dos componentes antes de desvanecer de forma suave
         setTimeout(() => {
             const splash = document.getElementById('local-splash');
-            if(splash) {
+            if (splash) {
                 splash.style.opacity = '0';
-                setTimeout(() => splash.remove(), 500);
+                setTimeout(() => splash.remove(), 400);
             }
-        }, 1500); // Exibe por 1.5 segundos
+        }, 1000); // Mantém tempo ideal de exibição sem gerar atraso artificial exaustivo
     });
 </script>
 
