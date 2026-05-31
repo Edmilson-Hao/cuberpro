@@ -47,9 +47,9 @@
                 <div class="timer-stats-row" style="flex-wrap: wrap; justify-content: center; gap: 10px;">
                     <div class="stat-box">ao5: <span id="timer-ao5">-</span> <small id="trend-ao5"></small></div>
                     <div class="stat-box">ao12: <span id="timer-ao12">-</span> <small id="trend-ao12"></small></div>
-                    <div class="stat-box">ao50: <span id="timer-ao50">-</span></div>
-                    <div class="stat-box">ao100: <span id="timer-ao100">-</span></div>
-                </div>
+                    <div class="stat-box">ao50: <span id="timer-ao50">-</span> <small id="trend-ao50"></small></div>
+                    <div class="stat-box">ao100: <span id="timer-ao100">-</span> <small id="trend-ao100"></small></div>
+                </div>      
             </div>
         </div>
     </main>
@@ -71,9 +71,10 @@
         
         <!-- NOVO: Container de Ações de Backup do Sistema -->
         <div style="margin: 15px; display: flex; gap: 10px;">
-            <button id="btn-share-backup" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: bold; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                🔗 Compartilhar / Exportar Backup
-            </button>
+            <div class="card-actions" style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn btn-primary" id="btn-export-json" style="flex: 1; padding: 12px; font-weight: bold;">Exportar JSON</button>
+                <button class="btn btn-secondary" id="btn-import-json" style="flex: 1; padding: 12px; font-weight: bold;">Importar JSON</button>
+            </div>
         </div>
 
         <div id="manage-list-container"></div>

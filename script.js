@@ -98,6 +98,7 @@ let timerInterval = null;
 let holdingTimeout = null;
 let currentScramble = '';
 
+// Garanta que dentro do DOMContentLoaded esteja assim:
 window.addEventListener('DOMContentLoaded', () => {
     initTheme();
     configurarAbas();
@@ -108,11 +109,9 @@ window.addEventListener('DOMContentLoaded', () => {
     renderizarTelas();
     
     document.getElementById('btn-clear-history').addEventListener('click', limparHistorico);
-    // Vincula a ação de clique do compartilhamento de dados
-    document.getElementById('btn-share-backup').addEventListener('click', compartilharDadosEBackup);
 
-    // Captura automática de dados recebidos por URL externa se houver transferência
-    processarBackupRecebido();
+    // Esta função agora inicializa os dois botões novos e gerencia o input oculto
+    processarBackupRecebido(); 
 });
 
 function initTheme() {
@@ -199,9 +198,12 @@ function configurarTimerEvents() {
     const iniciarPreparacao = (e) => {
         e.preventDefault();
 
+        // Se terminou um solve, o primeiro toque apenas prepara o próximo scramble sem zerar a tela
         if (timerStatus === 'STOPPED') {
             document.getElementById('record-badge').classList.add('hidden');
-            carregarNovoTimer(); 
+            currentScramble = gerarScrambleWCA();
+            document.getElementById('scramble-display').innerText = currentScramble;
+            timerStatus = 'IDLE';
             return;
         }
 
@@ -217,7 +219,6 @@ function configurarTimerEvents() {
         holdingTimeout = setTimeout(() => {
             timerStatus = 'READY';
             display.className = "timer-display ready";
-            display.innerText = "0.00";
         }, 500);
     };
 
@@ -229,6 +230,8 @@ function configurarTimerEvents() {
             display.className = "timer-display";
         } else if (timerStatus === 'READY') {
             timerStatus = 'RUNNING';
+            // O tempo antigo só some da tela e vira "0.00" aqui, no início real do novo solve!
+            display.innerText = "0.00";
             timerStartTime = performance.now();
             timerInterval = setInterval(() => {
                 const diff = performance.now() - timerStartTime;
@@ -241,7 +244,7 @@ function configurarTimerEvents() {
     areaToque.addEventListener('touchend', dispararTimer, { passive: false });
 
     window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space' && telaAtiva === 'screen-timer') {
+        if (e.code === 'Space' && telaAtiva === 'screen-timer' && !e.repeat) {
             iniciarPreparacao(e);
         }
     });
@@ -288,9 +291,7 @@ function pararTimer() {
 
     checarConquistasERecordes(finalTime, oldBest, isFirstRecord, oldAo5, oldAo12);
 
-    setTimeout(() => {
-        carregarNovoTimer();
-    }, 1200); 
+    // O reset automático que estava aqui foi removido para manter o tempo na tela!
 }
 
 function checarConquistasERecordes(finalTime, oldBest, isFirstRecord, oldAo5, oldAo12) {
@@ -366,118 +367,210 @@ function renderizarHistorico() {
     const container = document.getElementById('times-list-container');
     const averagesSub = document.getElementById('times-screen-averages');
     
+    // 1. ATUALIZAÇÃO INDIVIDUAL E SIMÉTRICA DAS QUATRO MÉDIAS NAS CAIXINHAS GLOBAIS
+    const configuracaoAverages = [
+        { n: 5, spanId: 'timer-ao5', trendId: 'trend-ao5' },
+        { n: 12, spanId: 'timer-ao12', trendId: 'trend-ao12' },
+        { n: 50, spanId: 'timer-ao50', trendId: 'trend-ao50' },
+        { n: 100, spanId: 'timer-ao100', trendId: 'trend-ao100' }
+    ];
+
+    configuracaoAverages.forEach(({ n, spanId, trendId }) => {
+        const elSpan = document.getElementById(spanId);
+        const elTrend = document.getElementById(trendId);
+        
+        if (!elSpan) return;
+
+        const atual = calcularAoN(historicoTempos, n);
+        
+        if (!atual) {
+            elSpan.innerText = "-";
+            if (elTrend) { elTrend.innerText = ""; elTrend.className = ""; }
+            return;
+        }
+
+        elSpan.innerText = atual.toFixed(2) + "s";
+
+        if (elTrend && historicoTempos.length > n) {
+            const historicoAnterior = historicoTempos.slice(1);
+            const anterior = calcularAoN(historicoAnterior, n);
+
+            if (anterior) {
+                const diff = atual - anterior;
+                if (diff < -0.001) {
+                    elTrend.innerText = "▲"; 
+                    elTrend.className = "trend-up";
+                } else if (diff > 0.001) {
+                    elTrend.innerText = "▼"; 
+                    elTrend.className = "trend-down";
+                } else {
+                    elTrend.innerText = "■";
+                    elTrend.className = "";
+                }
+            } else {
+                elTrend.innerText = "";
+                elTrend.className = "";
+            }
+        } else if (elTrend) {
+            elTrend.innerText = "";
+            elTrend.className = "";
+        }
+    });
+
+    // 2. VERIFICAÇÃO DE HISTÓRICO VAZIO
     if (historicoTempos.length === 0) {
         container.innerHTML = `<div class="empty-state"><p>Nenhum tempo registrado.</p></div>`;
-        averagesSub.innerText = "ao5: - | ao12: - | ao50: - | ao100: -";
+        if (averagesSub) averagesSub.innerText = "ao5: - | ao12: - | ao50: - | ao100: -";
         return;
     }
 
-    const curAo5 = calcularAoN(historicoTempos, 5);
-    const curAo12 = calcularAoN(historicoTempos, 12);
-    const curAo50 = calcularAoN(historicoTempos, 50);
-    const curAo100 = calcularAoN(historicoTempos, 100);
-    
-    averagesSub.innerText = `ao5: ${curAo5 ? curAo5.toFixed(2)+'s' : '-'} | ao12: ${curAo12 ? curAo12.toFixed(2)+'s' : '-'} | ao50: ${curAo50 ? curAo50.toFixed(2)+'s' : '-'} | ao100: ${curAo100 ? curAo100.toFixed(2)+'s' : '-'}`;
+    // 3. ATUALIZAÇÃO DO TEXTO DO SUB-CABEÇALHO SECUNDÁRIO NATIVO
+    if (averagesSub) {
+        const curAo5 = calcularAoN(historicoTempos, 5);
+        const curAo12 = calcularAoN(historicoTempos, 12);
+        const curAo50 = calcularAoN(historicoTempos, 50);
+        const curAo100 = calcularAoN(historicoTempos, 100);
+        averagesSub.innerText = `ao5: ${curAo5 ? curAo5.toFixed(2)+'s' : '-'} | ao12: ${curAo12 ? curAo12.toFixed(2)+'s' : '-'} | ao50: ${curAo50 ? curAo50.toFixed(2)+'s' : '-'} | ao100: ${curAo100 ? curAo100.toFixed(2)+'s' : '-'}`;
+    }
 
+    // 4. RESTAURAÇÃO DO FILTRO: Filtra e ordena estritamente os TOP 12 Melhores Tempos (Ranking)
     const top12Melhores = [...historicoTempos]
         .sort((a, b) => a.tempo - b.tempo)
         .slice(0, 12);
 
-    container.innerHTML = top12Melhores.map((t, idx) => `
-        <div class="time-row">
-            <div class="time-row-summary">
-                <div class="time-row-left">
-                    <span class="time-index">#${idx + 1}</span>
-                    <span class="time-value" style="${idx === 0 ? 'color: var(--warning);' : ''}">${t.tempo.toFixed(2)}s</span>
-                </div>
-                <div>
-                    <span class="time-date">${t.data}</span>
-                    <button class="btn-delete-time" data-del="${t.id}">&times;</button>
-                </div>
-            </div>
-            <div class="time-row-detail">
-                <strong>Scramble:</strong> ${t.scramble}
-            </div>
-        </div>
-    `).join('');
+    // 5. RENDERIZAÇÃO DAS LINHAS DO RANKING
+    container.innerHTML = top12Melhores.map((t, idx) => {
+        // Mapeia metadados do caso (Nome e Algoritmo)
+        const casoObj = listaCasos.find(c => c.id === t.caso);
+        const nomeCaso = casoObj ? casoObj.nome : (t.caso || "Geral");
+        const algoritmoCaso = casoObj ? casoObj.algoritmo : "Sem algoritmo mapeado";
 
-    // Reconfigura os listeners de deleção e expansão padrão abaixo...
+        return `
+            <div class="time-row">
+                <div class="time-row-summary">
+                    <div class="time-row-left">
+                        <span class="time-index">#${idx + 1}</span>
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 1px;">
+                            <span class="time-value" style="${idx === 0 ? 'color: var(--warning); font-weight: bold;' : ''}">${t.tempo.toFixed(2)}s</span>
+                            <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 500;">${nomeCaso}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="time-date">${t.data}</span>
+                        <button class="btn-delete-time" data-del="${t.id}">&times;</button>
+                    </div>
+                </div>
+                <div class="time-row-detail">
+                    <strong>Scramble:</strong> <code style="background: var(--bg-main); padding: 2px 4px; border-radius: 4px; font-size: 0.75rem; word-break: break-all; display: inline-block; margin-bottom: 4px;">${t.scramble}</code>
+                    <div style="margin-top: 4px; border-top: 1px dashed var(--border); padding-top: 4px; font-size: 0.8rem;">
+                        <strong>Algoritmo do Caso:</strong> <span style="color: var(--accent); font-weight: 600; font-family: monospace;">${algoritmoCaso}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // 6. RE-VINCULAÇÃO DOS COMPORTAMENTOS DE EXPANSÃO NATIVOS (ACCORDION)
     document.querySelectorAll('.time-row-summary').forEach(summary => {
         summary.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-delete-time')) return;
-            const row = e.currentTarget.parentElement;
+            const row = summary.parentElement;
             row.classList.toggle('expanded');
         });
     });
 
+    // 7. RE-VINCULAÇÃO DA EXCLUSÃO INDIVIDUAL DE REGISTROS
     document.querySelectorAll('[data-del]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const idDeletar = parseInt(e.currentTarget.getAttribute('data-del'));
-            historicoTempos = historicoTempos.filter(t => t.id !== idDeletar);
-            localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoTempos));
-            renderizarHistorico();
+            if (confirm("Remover definitivamente este tempo do histórico?")) {
+                historicoTempos = historicoTempos.filter(t => t.id !== idDeletar);
+                localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoTempos));
+                renderizarHistorico();
+            }
         });
     });
 }
 
-function compartilharDadosEBackup() {
+// 1. FUNÇÃO DE EXPORTAÇÃO (Gera e baixa o arquivo .json na hora)
+function exportarDadosJSON() {
     try {
         const pacoteDados = {
-            progresso: localStorage.getItem('cube_progresso') || "{}",
-            historico: localStorage.getItem('cube_historico_tempos') || "[]"
+            progresso: JSON.parse(localStorage.getItem('cube_progresso') || "{}"),
+            historico: JSON.parse(localStorage.getItem('cube_historico_tempos') || "[]")
         };
         
-        // Compacta os objetos transformando-os em uma string Base64 segura para transporte em URL
-        const stringDados = btoa(unescape(encodeURIComponent(JSON.stringify(pacoteDados))));
-        const urlFinal = `${window.location.origin}${window.location.pathname}?backup=${stringDados}`;
+        const jsonString = JSON.stringify(pacoteDados, null, 2);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
         
-        // Copia automaticamente para a Área de Transferência do Usuário
-        navigator.clipboard.writeText(urlFinal).then(() => {
-            alert("🚀 Link de Backup criado e copiado com sucesso!\n\nEnvie esse link para outro dispositivo ou guarde-o para restaurar seus dados quando quiser.");
-        }).catch(err => {
-            console.error("Falha ao copiar link de forma direta, exibindo em prompt alternativo", err);
-            prompt("Copie o link de exportação abaixo:", urlFinal);
-        });
+        const linkDownload = document.createElement("a");
+        const agora = new Date();
+        const dataStr = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-${String(agora.getDate()).padStart(2, '0')}`;
+        
+        linkDownload.href = url;
+        linkDownload.download = `cubetrainer_backup_${dataStr}.json`;
+        
+        document.body.appendChild(linkDownload);
+        linkDownload.click();
+        document.body.removeChild(linkDownload);
+        URL.revokeObjectURL(url);
     } catch (e) {
-        alert("Erro ao processar a exportação de dados.");
+        alert("Erro ao exportar o arquivo de backup.");
         console.error(e);
     }
 }
 
 function processarBackupRecebido() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const backupBase64 = urlParams.get('backup');
-    
-    if (backupBase64) {
-        if (confirm("📥 Detectamos um link de dados externo compartilhado!\n\nDeseja importar estes tempos e históricos de progresso? Isso substituirá os dados locais atuais deste dispositivo.")) {
+    // Remove se já existir um input duplicado perdido na árvore DOM
+    const existente = document.getElementById('input-import-json-oculto');
+    if (existente) existente.remove();
+
+    // Cria o seletor de arquivos oculto do sistema com ID persistente
+    const inputArquivoOculto = document.createElement('input');
+    inputArquivoOculto.type = 'file';
+    inputArquivoOculto.accept = '.json';
+    inputArquivoOculto.style.display = 'none';
+    inputArquivoOculto.id = 'input-import-json-oculto';
+
+    inputArquivoOculto.addEventListener('change', (e) => {
+        const arquivo = e.target.files[0];
+        if (!arquivo) return;
+
+        const leitor = new FileReader();
+        leitor.onload = function(evento) {
             try {
-                const stringDecodificada = decodeURIComponent(escape(atob(backupBase64)));
-                const objetoDados = JSON.parse(stringDecodificada);
+                const dadosImportados = JSON.parse(evento.target.result);
                 
-                if (objetoDados.progresso && objetoDados.historico) {
-                    localStorage.setItem('cube_progresso', objetoDados.progresso);
-                    localStorage.setItem('cube_historico_tempos', objetoDados.historico);
-                    
-                    // Sincroniza as variáveis de estado em tempo real
-                    progresso = JSON.parse(objetoDados.progresso);
-                    historicoTempos = JSON.parse(objetoDados.historico);
-                    
-                    alert("✅ Dados importados e sincronizados com sucesso!");
-                    
-                    // Limpa os parâmetros da URL para evitar laço infinito de importação ao recarregar a página
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    renderizarTelas();
+                if (dadosImportados && (dadosImportados.progresso || dadosImportados.historico)) {
+                    if (confirm("📥 Backup Válido!\n\nDeseja importar estes dados? Isso substituirá permanentemente todo o progresso e histórico atual deste dispositivo.")) {
+                        
+                        const stringProgresso = JSON.stringify(dadosImportados.progresso || {});
+                        const stringHistorico = JSON.stringify(dadosImportados.historico || []);
+
+                        localStorage.setItem('cube_progresso', stringProgresso);
+                        localStorage.setItem('cube_historico_tempos', stringHistorico);
+                        
+                        progresso = JSON.parse(stringProgresso);
+                        historicoTempos = JSON.parse(stringHistorico);
+                        
+                        alert("✅ Dados restaurados com sucesso!");
+                        renderizarTelas();
+                    }
+                } else {
+                    alert("Erro: O arquivo selecionado não possui um formato de backup válido.");
                 }
             } catch (err) {
-                alert("Falha crítica ao ler o link de backup. Certifique-se de que a URL não está corrompida.");
+                alert("Erro ao processar o arquivo JSON. Certifique-se de que o arquivo não está corrompido.");
                 console.error(err);
             }
-        } else {
-            // Se o usuário recusar, limpa a URL para uso limpo do sistema
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-    }
+            inputArquivoOculto.value = ''; 
+        };
+        leitor.readAsText(arquivo);
+    });
+
+    document.body.appendChild(inputArquivoOculto);
 }
 
 function limparHistorico() {
@@ -640,12 +733,13 @@ function renderizarGerenciador() {
         <div>Progresso: <strong>${concluidos} / ${total}</strong></div>
     `;
 
+    // CORREÇÃO DA FOTO: Adicionado o caminho correto 'imagens/' antes do nome do arquivo de imagem
     listContainer.innerHTML = casosFiltrados.map(c => {
         const dados = obterDadosCaso(c.id);
         return `
             <div class="manage-item">
                 <div class="manage-item-info">
-                    <img src="${c.imagem}" class="manage-thumb" style="width: 30px; height: 30px; background: #fff; border-radius: 4px;" onerror="this.style.display='none'">
+                    <img src="imagens/${c.imagem}" class="manage-thumb" style="width: 30px; height: 30px; background: #fff; border-radius: 4px;" onerror="this.style.display='none'">
                     <div class="manage-name">${c.nome}</div>
                 </div>
                 <button class="btn ${dados.estudado ? 'btn-success' : 'btn-secondary'}" data-toggle-id="${c.id}" style="padding:6px 12px; font-size:0.75rem; flex:none; max-width:100px;">
@@ -664,4 +758,20 @@ function renderizarGerenciador() {
             renderizarGerenciador();
         });
     });
+
+    // CORREÇÃO DOS BOTÕES: Re-vincula os eventos de clique sempre que a tela gerenciar renderizar
+    const btnExport = document.getElementById('btn-export-json');
+    const btnImport = document.getElementById('btn-import-json');
+    
+    // Busca o input oculto gerado pelo sistema
+    let inputArquivoOculto = document.getElementById('input-import-json-oculto');
+
+    if (btnExport) {
+        btnExport.replaceWith(btnExport.cloneNode(true)); // Limpa listeners órfãos antigos
+        document.getElementById('btn-export-json').addEventListener('click', exportarDadosJSON);
+    }
+    if (btnImport && inputArquivoOculto) {
+        btnImport.replaceWith(btnImport.cloneNode(true)); // Limpa listeners órfãos antigos
+        document.getElementById('btn-import-json').addEventListener('click', () => inputArquivoOculto.click());
+    }
 }

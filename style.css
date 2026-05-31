@@ -129,7 +129,7 @@ h1 {
     flex: 1;
     overflow-y: auto; /* Só o conteúdo de dentro vai rolar agora! */
     padding: 16px;
-    padding-bottom: 30px; /* Margemzinha interna padrão */
+    padding-bottom: calc(56px + var(--safe-area-bottom) + 16px); /* Espaço dinâmico para a NAV e área segura */
     -webkit-overflow-scrolling: touch; /* Deixa a rolagem suave no iPhone */
 }
 
