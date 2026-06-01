@@ -58,15 +58,48 @@
     </main>
 
     <main class="main-content hidden" id="screen-times">
-        <div class="times-header">
-            <div>
-                <h3 style="font-size: 1.1rem;">Top 12 Melhores Tempos</h3>
-                <div class="global-stats-sub" id="times-screen-averages">ao5: - | ao12: -</div>
+        <div class="stats-panel-premium" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+            <div class="card" style="padding: 15px;">
+                <h3 style="font-size: 1rem; margin-bottom: 10px; display: flex; justify-content: space-between;">
+                    <span>📈 Média Global Eficiente</span>
+                    <small id="txt-global-average" style="color: var(--accent); font-weight: bold;"></small>
+                </h3>
+                <div id="svg-chart-wrapper" style="width: 100%; height: 120px; background: var(--bg-main); border-radius: 8px;"></div>
             </div>
-            <button class="btn-delete-time" id="btn-clear-history" style="font-size: 0.8rem;">Limpar Tudo</button>
+
+            <div class="card" style="padding: 15px;">
+                <h3 style="font-size: 1rem; margin-bottom: 10px;">📊 Distribuição de Tempos (Consistência)</h3>
+                <div id="svg-bell-wrapper" style="width: 100%; height: 120px; background: var(--bg-main); border-radius: 8px;"></div>
+            </div>
+
+            <div class="card" style="padding: 15px; border-left: 4px solid var(--warning);">
+                <h3 style="font-size: 1rem; margin-bottom: 8px;">⚠️ Diagnóstico Inteligente de Gargalos</h3>
+                <div id="bottleneck-diagnostics" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+                    Nenhum gargalo calculado. Vincule casos aos seus tempos para ativar o scanner artificial.
+                </div>
+            </div>
         </div>
+
+        <div class="section-title" id="times-screen-averages" style="font-size: 0.8rem; text-align: center; margin-bottom: 10px; opacity: 0.8;"></div>
         <div id="times-list-container"></div>
     </main>
+
+    <div id="modal-vincular-caso" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: var(--bg-card); width: 100%; max-width: 450px; height: 80vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+            <div style="padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-main);">
+                <h3 style="font-size: 1.1rem; color: var(--text-primary);">Vincular Caso ao Solve</h3>
+                <button id="btn-fechar-modal-caso" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer;">&times;</button>
+            </div>
+            
+            <div style="display: flex; background: var(--bg-main); border-bottom: 1px solid var(--border);">
+                <button id="modal-tab-oll" style="flex: 1; padding: 10px; border: none; background: none; font-weight: bold; color: var(--accent); border-bottom: 2px solid var(--accent); cursor: pointer;">OLL</button>
+                <button id="modal-tab-pll" style="flex: 1; padding: 10px; border: none; background: none; font-weight: bold; color: var(--text-secondary); cursor: pointer;">PLL</button>
+            </div>
+
+            <div id="modal-casos-grid-container" style="flex: 1; overflow-y: auto; padding: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                </div>
+        </div>
+    </div>
 
     <div id="screen-manage" class="main-content hidden">
         <!-- Caixa de estatísticas existente -->

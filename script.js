@@ -99,6 +99,9 @@ let timerInterval = null;
 let holdingTimeout = null;
 let currentScramble = '';
 
+let idSolveParaVincular = null;
+let grupoModalAtivo = 'OLL';
+
 window.addEventListener('DOMContentLoaded', () => {
     initTheme();
     configurarAbas();
@@ -111,6 +114,12 @@ window.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('btn-clear-history').addEventListener('click', limparHistorico);
     processarBackupRecebido(); 
+    
+    document.getElementById('btn-fechar-modal-caso').addEventListener('click', () => {
+        document.getElementById('modal-vincular-caso').classList.add('hidden');
+    });
+    document.getElementById('modal-tab-oll').addEventListener('click', () => mudarGrupoModal('OLL'));
+    document.getElementById('modal-tab-pll').addEventListener('click', () => mudarGrupoModal('PLL'));
 });
 
 function initTheme() {
@@ -194,7 +203,9 @@ function renderizarTelas() {
     if (telaAtiva === 'screen-timer') renderizarValoresTimer();
     if (telaAtiva === 'screen-times') {
         renderizarHistorico();
-        renderizarGraficoEvolucao();
+        renderizarGraficoEvolucao();  // Média Global Eficiente
+        renderizarGraficoCurvaBell(); // Distribuição de Tempos
+        calcularDiagnosticoGargalos(); // Identificador de Gargalos
     }
     if (telaAtiva === 'screen-manage') {
         renderizarGerenciador();
@@ -345,6 +356,7 @@ function pararTimer() {
     localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoTempos));
 
     registrarSolveNoStreak();
+    abrirModalVinculo(novoTempo.id);
     checarConquistasERecordes(finalTime, oldBest, isFirstRecord, oldAo5, oldAo12);
 }
 
@@ -420,47 +432,6 @@ function renderizarHistorico() {
     const container = document.getElementById('times-list-container');
     const averagesSub = document.getElementById('times-screen-averages');
     if (!container) return;
-    
-    const configuracaoAverages = [
-        { n: 5, spanId: 'timer-ao5', trendId: 'trend-ao5' },
-        { n: 12, spanId: 'timer-ao12', trendId: 'trend-ao12' },
-        { n: 50, spanId: 'timer-ao50', trendId: 'trend-ao50' },
-        { n: 100, spanId: 'timer-ao100', trendId: 'trend-ao100' }
-    ];
-
-    configuracaoAverages.forEach(({ n, spanId, trendId }) => {
-        const elSpan = document.getElementById(spanId);
-        const elTrend = document.getElementById(trendId);
-        if (!elSpan) return;
-
-        const atual = calcularAoN(historicoTempos, n);
-        if (!atual) {
-            elSpan.innerText = "-";
-            if (elTrend) { elTrend.innerText = ""; elTrend.className = ""; }
-            return;
-        }
-
-        elSpan.innerText = atual.toFixed(2) + "s";
-
-        if (elTrend && historicoTempos.length > n) {
-            const historicoAnterior = historicoTempos.slice(1);
-            const anterior = calcularAoN(historicoAnterior, n);
-
-            if (anterior) {
-                const diff = atual - anterior;
-                if (diff < -0.001) {
-                    elTrend.innerText = "▲"; 
-                    elTrend.className = "trend-up";
-                } else if (diff > 0.001) {
-                    elTrend.innerText = "▼"; 
-                    elTrend.className = "trend-down";
-                } else {
-                    elTrend.innerText = "■";
-                    elTrend.className = "";
-                }
-            } else { elTrend.innerText = ""; elTrend.className = ""; }
-        } else if (elTrend) { elTrend.innerText = ""; elTrend.className = ""; }
-    });
 
     if (historicoTempos.length === 0) {
         container.innerHTML = `<div class="empty-state"><p>Nenhum tempo registrado.</p></div>`;
@@ -468,6 +439,7 @@ function renderizarHistorico() {
         return;
     }
 
+    // Calcula e atualiza o painel superior de médias (WCA Averages)
     if (averagesSub) {
         const curAo5 = calcularAoN(historicoTempos, 5);
         const curAo12 = calcularAoN(historicoTempos, 12);
@@ -476,12 +448,27 @@ function renderizarHistorico() {
         averagesSub.innerText = `ao5: ${curAo5 ? curAo5.toFixed(2)+'s' : '-'} | ao12: ${curAo12 ? curAo12.toFixed(2)+'s' : '-'} | ao50: ${curAo50 ? curAo50.toFixed(2)+'s' : '-'} | ao100: ${curAo100 ? curAo100.toFixed(2)+'s' : '-'}`;
     }
 
+    // Filtra os 12 melhores tempos ordenados por velocidade para o ranking da tela
     const top12Melhores = [...historicoTempos].sort((a, b) => a.tempo - b.tempo).slice(0, 12);
 
+    // Renderização do HTML com suporte para exibição de múltiplos casos
     container.innerHTML = top12Melhores.map((t, idx) => {
-        const casoObj = listaCasos.find(c => c.id === t.caso);
-        const nomeCaso = casoObj ? casoObj.nome : (t.caso || "Geral");
-        const algoritmoCaso = casoObj ? casoObj.algoritmo : "Sem algoritmo mapeado";
+        let nomeExibicao = "Geral";
+        let algoritmoOll = "Não mapeado";
+        let algoritmoPll = "Não mapeado";
+
+        // Se houver vínculos duplos de casos, busca os nomes e algoritmos de ambos
+        if (t.casosDuplos) {
+            const ollObj = listaCasos.find(c => c.id === t.casosDuplos.oll);
+            const pllObj = listaCasos.find(c => c.id === t.casosDuplos.pll);
+            
+            const nomeOll = ollObj ? ollObj.nome : "-";
+            const nomePll = pllObj ? pllObj.nome : "-";
+            nomeExibicao = `OLL: ${nomeOll} | PLL: ${nomePll}`;
+            
+            if (ollObj) algoritmoOll = ollObj.algoritmo;
+            if (pllObj) algoritmoPll = pllObj.algoritmo;
+        }
 
         return `
             <div class="time-row">
@@ -490,42 +477,63 @@ function renderizarHistorico() {
                         <span class="time-index">#${idx + 1}</span>
                         <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 1px;">
                             <span class="time-value" style="${idx === 0 ? 'color: var(--warning); font-weight: bold;' : ''}">${t.tempo.toFixed(2)}s</span>
-                            <span style="font-size: 0.7rem; color: var(--text-secondary); font-weight: 500;">${nomeCaso}</span>
+                            <span style="font-size: 0.65rem; color: var(--text-secondary); font-weight: 500;">${nomeExibicao}</span>
                         </div>
                     </div>
-                    <div>
+                    
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <button class="btn-vincular-retroativo" data-vinc-id="${t.id}" style="background: var(--bg-main); border: 1px solid var(--border); font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; color: var(--text-primary); cursor: pointer; position: relative; z-index: 10;">🏷️ Casos</button>
                         <span class="time-date">${t.data}</span>
                         <button class="btn-delete-time" data-del="${t.id}">&times;</button>
                     </div>
                 </div>
+                
                 <div class="time-row-detail">
                     <strong>Scramble:</strong> <code style="background: var(--bg-main); padding: 2px 4px; border-radius: 4px; font-size: 0.75rem; word-break: break-all; display: inline-block; margin-bottom: 4px;">${t.scramble}</code>
-                    <div style="margin-top: 4px; border-top: 1px dashed var(--border); padding-top: 4px; font-size: 0.8rem;">
-                        <strong>Algoritmo do Caso:</strong> <span style="color: var(--accent); font-weight: 600; font-family: monospace;">${algoritmoCaso}</span>
+                    <div style="margin-top: 4px; border-top: 1px dashed var(--border); padding-top: 4px; font-size: 0.75rem; display: flex; flex-direction: column; gap: 2px;">
+                        <div><strong>Algoritmo OLL:</strong> <span style="color: var(--accent); font-family: monospace;">${algoritmoOll}</span></div>
+                        <div><strong>Algoritmo PLL:</strong> <span style="color: var(--warning); font-family: monospace;">${algoritmoPll}</span></div>
                     </div>
                 </div>
             </div>
         `;
     }).join('');
 
+    // Listener 1: Expandir / Recolher as linhas para visualizar os scrambles e algoritmos
     document.querySelectorAll('.time-row-summary').forEach(summary => {
         summary.addEventListener('click', (e) => {
-            if (e.target.classList.contains('btn-delete-time')) return;
+            // Evita expandir a linha se o clique ocorreu em botões de ação internos
+            if (e.target.classList.contains('btn-delete-time') || e.target.classList.contains('btn-vincular-retroativo')) return;
             const row = summary.parentElement;
             row.classList.toggle('expanded');
         });
     });
 
+    // Listener 2: Eliminar tempos do histórico com conversão correta de IDs numéricos
     document.querySelectorAll('[data-del]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const idDeletar = parseInt(e.currentTarget.getAttribute('data-del'));
+            const idDeletar = Number(e.currentTarget.getAttribute('data-del'));
             if (confirm("Remover definitivamente este tempo do histórico?")) {
-                historicoTempos = historicoTempos.filter(t => t.id !== idDeletar);
+                historicoTempos = historicoTempos.filter(t => Number(t.id) !== idDeletar);
                 localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoTempos));
+                
+                // Recarrega todos os nós e gráficos afetados em tempo real
                 renderizarHistorico();
                 renderizarGraficoEvolucao();
+                renderizarGraficoCurvaBell();
+                calcularDiagnosticoGargalos();
             }
+        });
+    });
+
+    // Listener 3: Gatilho com isolamento total para abrir o Modal Duplo de Casos
+    container.querySelectorAll('.btn-vincular-retroativo').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            const idVinc = e.currentTarget.getAttribute('data-vinc-id');
+            abrirModalVinculo(idVinc);
         });
     });
 }
@@ -580,6 +588,14 @@ function renderizarGraficoEvolucao() {
             ${pontosCirculos}
         </svg>
     `;
+    // Adicione no fim de renderizarHistorico junto com os outros seletores [data-del]
+    document.querySelectorAll('[data-vinc-id]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idVinc = parseInt(e.currentTarget.getAttribute('data-vinc-id'));
+            abrirModalVinculo(idVinc);
+        });
+    });
 }
 
 function obterDataHoje() {
@@ -911,5 +927,350 @@ function renderizarGerenciador() {
     if (btnImport && inputArquivoOculto) {
         btnImport.replaceWith(btnImport.cloneNode(true));
         document.getElementById('btn-import-json').addEventListener('click', () => inputArquivoOculto.click());
+    }
+}
+
+// ==========================================
+// MOTOR DO MODAL DE VINCULAÇÃO DUPLA (OLL + PLL) COM FECHAMENTO AUTOMÁTICO
+// ==========================================
+function abrirModalVinculo(solveId) {
+    idSolveParaVincular = Number(solveId); 
+    
+    // Começa sempre pela aba de OLL para o usuário selecionar na ordem natural do CFOP
+    grupoModalAtivo = 'OLL';
+    mudarGrupoModal(grupoModalAtivo);
+    
+    // Configura o botão Fechar (X) para caso o usuário queira sair sem escolher tudo
+    const btnFechar = document.getElementById('btn-fechar-modal-caso');
+    if (btnFechar) {
+        btnFechar.onclick = function(e) {
+            e.stopPropagation();
+            document.getElementById('modal-vincular-caso').classList.add('hidden');
+        };
+    }
+    
+    // Vincula a navegação manual das abas superiores
+    const tabOll = document.getElementById('modal-tab-oll');
+    const tabPll = document.getElementById('modal-tab-pll');
+    
+    if (tabOll) {
+        tabOll.onclick = function(e) {
+            e.stopPropagation();
+            mudarGrupoModal('OLL');
+        };
+    }
+    if (tabPll) {
+        tabPll.onclick = function(e) {
+            e.stopPropagation();
+            mudarGrupoModal('PLL');
+        };
+    }
+    
+    document.getElementById('modal-vincular-caso').classList.remove('hidden');
+}
+
+function mudarGrupoModal(grupo) {
+    grupoModalAtivo = grupo;
+    const tabOll = document.getElementById('modal-tab-oll');
+    const tabPll = document.getElementById('modal-tab-pll');
+    
+    if (!tabOll || !tabPll) return;
+    
+    if (grupo === 'OLL') {
+        tabOll.style.color = 'var(--accent)';
+        tabOll.style.borderBottom = '2px solid var(--accent)';
+        tabPll.style.color = 'var(--text-secondary)';
+        tabPll.style.borderBottom = 'none';
+    } else {
+        tabPll.style.color = 'var(--accent)';
+        tabPll.style.borderBottom = '2px solid var(--accent)';
+        tabOll.style.color = 'var(--text-secondary)';
+        tabOll.style.borderBottom = 'none';
+    }
+    
+    renderizarGridCasosModal();
+}
+
+function renderizarGridCasosModal() {
+    const container = document.getElementById('modal-casos-grid-container');
+    if (!container) return;
+    
+    const casosFiltrados = listaCasos.filter(c => c.grupo === grupoModalAtivo);
+    const solveAtual = historicoTempos.find(t => Number(t.id) === idSolveParaVincular);
+
+    container.innerHTML = casosFiltrados.map(c => {
+        // Verifica se este caso específico está selecionado dentro do novo formato duplo
+        let isSelected = false;
+        if (solveAtual && solveAtual.casosDuplos) {
+            if (grupoModalAtivo === 'OLL' && solveAtual.casosDuplos.oll === c.id) isSelected = true;
+            if (grupoModalAtivo === 'PLL' && solveAtual.casosDuplos.pll === c.id) isSelected = true;
+        }
+
+        return `
+            <div class="grid-caso-item ${isSelected ? 'selected' : ''}" data-vincular-caso-id="${c.id}">
+                <img src="imagens/${c.imagem}" onerror="this.src='imagens/oll-caso-01.png'">
+                <span>${c.nome}</span>
+            </div>
+        `;
+    }).join('');
+
+    container.querySelectorAll('[data-vincular-caso-id]').forEach(el => {
+        el.onclick = function(e) {
+            e.stopPropagation();
+            const casoId = this.getAttribute('data-vincular-caso-id');
+            
+            let fechamentoAutomatico = false;
+
+            historicoTempos = historicoTempos.map(t => {
+                if (Number(t.id) === idSolveParaVincular) {
+                    // Inicializa o objeto de casos duplos se ele ainda não existir no solve
+                    const casos = t.casosDuplos || { oll: null, pll: null };
+                    
+                    if (grupoModalAtivo === 'OLL') {
+                        casos.oll = casoId;
+                    } else if (grupoModalAtivo === 'PLL') {
+                        casos.pll = casoId;
+                    }
+
+                    // CRITÉRIO DE FECHAMENTO: Se ambos (OLL e PLL) estiverem preenchidos, ativa o fechamento automático
+                    if (casos.oll && casos.pll) {
+                        fechamentoAutomatico = true;
+                    }
+
+                    return { ...t, casosDuplos: casos };
+                }
+                return t;
+            });
+            
+            localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoTempos));
+            
+            if (fechamentoAutomatico) {
+                // Se escolheu os dois, fecha o modal sozinho!
+                document.getElementById('modal-vincular-caso').classList.add('hidden');
+            } else {
+                // Se escolheu apenas o OLL, muda automaticamente para a aba de PLL para agilizar a segunda escolha!
+                if (grupoModalAtivo === 'OLL') {
+                    mudarGrupoModal('PLL');
+                } else {
+                    renderizarGridCasosModal();
+                }
+            }
+            
+            // Atualiza os componentes de estatísticas e histórico na tela principal
+            if (typeof renderizarTelas === 'function') {
+                renderizarTelas();
+            } else {
+                renderizarHistorico();
+                renderizarGraficoEvolucao();
+                renderizarGraficoCurvaBell();
+                calcularDiagnosticoGargalos();
+            }
+        };
+    });
+}
+
+// ==========================================
+// 1. MÉDIA GLOBAL EFICIENTE (RESTAURAÇÃO DO GRÁFICO EXPANDIDO)
+// ==========================================
+function renderizarGraficoEvolucao() {
+    const wrapper = document.getElementById('svg-chart-wrapper');
+    const txtGlobal = document.getElementById('txt-global-average');
+    if (!wrapper) return;
+
+    // Calcula Média Global Pura de todos os tempos salvos
+    if (historicoTempos.length > 0) {
+        const somaTotal = historicoTempos.reduce((acc, v) => acc + v.tempo, 0);
+        if (txtGlobal) txtGlobal.innerText = `Média Geral: ${(somaTotal / historicoTempos.length).toFixed(2)}s`;
+    } else {
+        if (txtGlobal) txtGlobal.innerText = "";
+    }
+
+    const ultimosSolves = historicoTempos.slice(0, 15).reverse();
+    if (ultimosSolves.length < 2) {
+        wrapper.innerHTML = `<div style="font-size:0.8rem; color:var(--text-secondary); text-align:center; padding-top:45px;">Registre ao menos 2 tempos para ver a linha de evolução.</div>`;
+        return;
+    }
+
+    const temposValores = ultimosSolves.map(s => s.tempo);
+    const maxTempo = Math.max(...temposValores);
+    const minTempo = Math.min(...temposValores);
+    const range = maxTempo - minTempo === 0 ? 1 : maxTempo - minTempo;
+
+    const width = wrapper.clientWidth || 400;
+    const height = 120;
+    const paddingX = 25;
+    const paddingY = 20;
+
+    const chartWidth = width - (paddingX * 2);
+    const chartHeight = height - (paddingY * 2);
+    const passoX = chartWidth / (ultimosSolves.length - 1);
+
+    let pontosPath = "";
+    let pontosTrendPath = ""; // Linha da média móvel eficiente
+    let pontosCirculos = "";
+    
+    let somaAcumulada = 0;
+
+    ultimosSolves.forEach((solve, i) => {
+        const x = paddingX + (i * passoX);
+        const y = paddingY + chartHeight - (((solve.tempo - minTempo) / range) * chartHeight);
+        
+        // Desenha a linha bruta do solve
+        if (i === 0) pontosPath += `M ${x} ${y}`;
+        else pontosPath += ` L ${x} ${y}`;
+
+        // Cálculo da Linha de Tendência Eficiente (Média móvel acumulativa simples para suavizar picos)
+        somaAcumulada += solve.tempo;
+        const mediaMovel = somaAcumulada / (i + 1);
+        const yTrend = paddingY + chartHeight - (((mediaMovel - minTempo) / range) * chartHeight);
+        
+        if (i === 0) pontosTrendPath += `M ${x} ${yTrend}`;
+        else pontosTrendPath += ` L ${x} ${yTrend}`;
+
+        pontosCirculos += `<circle cx="${x}" cy="${y}" r="3.5" fill="var(--accent)" stroke="var(--bg-card)" stroke-width="1.5"/>`;
+    });
+
+    const corStroke = document.body.classList.contains('dark') ? '#3b82f6' : '#2563eb';
+    const corTrend = '#10b981'; // Verde para a linha de tendência suave
+
+    wrapper.innerHTML = `
+        <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="overflow: visible;">
+            <line x1="${paddingX}" y1="${paddingY}" x2="${width - paddingX}" y2="${paddingY}" stroke="var(--border)" stroke-dasharray="3,3" />
+            <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" stroke="var(--border)" stroke-dasharray="3,3" />
+            <path d="${pontosPath}" fill="none" stroke="${corStroke}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.4" />
+            <path d="${pontosTrendPath}" fill="none" stroke="${corTrend}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="trend-line" />
+            ${pontosCirculos}
+        </svg>
+    `;
+}
+
+// ==========================================
+// 2. DISTRIBUIÇÃO DE TEMPOS (CURVA DE BELL EM SVG)
+// ==========================================
+function renderizarGraficoCurvaBell() {
+    const wrapper = document.getElementById('svg-bell-wrapper');
+    if (!wrapper) return;
+
+    if (historicoTempos.length < 5) {
+        wrapper.innerHTML = `<div style="font-size:0.8rem; color:var(--text-secondary); text-align:center; padding-top:45px;">Registre no mínimo 5 solves para mapear a sua consistência.</div>`;
+        return;
+    }
+
+    const tempos = historicoTempos.map(t => t.tempo);
+    const min = Math.min(...tempos);
+    const max = Math.max(...tempos);
+    
+    // Divide os tempos em 5 faixas (Grupos de consistência)
+    const totalFaixas = 5;
+    const tamanhoFaixa = (max - min) === 0 ? 1 : (max - min) / totalFaixas;
+    const faixasContagem = new Array(totalFaixas).fill(0);
+
+    tempos.forEach(t => {
+        let index = Math.floor((t - min) / tamanhoFaixa);
+        if (index >= totalFaixas) index = totalFaixas - 1;
+        faixasContagem[index]++;
+    });
+
+    const maxContagem = Math.max(...faixasContagem);
+    const width = wrapper.clientWidth || 400;
+    const height = 120;
+    const paddingX = 30;
+    const paddingY = 20;
+
+    const chartWidth = width - (paddingX * 2);
+    const chartHeight = height - (paddingY * 2);
+    const larguraBarra = (chartWidth / totalFaixas) - 8;
+
+    let barrasHTML = "";
+    let legendasHTML = "";
+
+    faixasContagem.forEach((qtd, i) => {
+        const alturaBarra = maxContagem === 0 ? 0 : (qtd / maxContagem) * chartHeight;
+        const x = paddingX + (i * (chartWidth / totalFaixas)) + 4;
+        const y = height - paddingY - alturaBarra;
+        
+        // Calcula o ponto médio de tempo que essa barra representa
+        const tempoFaixaMedio = min + (i * tamanhoFaixa) + (tamanhoFaixa / 2);
+
+        barrasHTML += `
+            <rect x="${x}" y="${y}" width="${larguraBarra}" height="${alturaBarra}" fill="var(--accent)" opacity="0.75" rx="4" class="chart-bar-bell">
+                <title>Quantidade: ${qtd} solves nesta faixa</title>
+            </rect>
+        `;
+        
+        legendasHTML += `
+            <text x="${x + (larguraBarra/2)}" y="${height - 5}" font-size="8" fill="var(--text-secondary)" text-anchor="middle">
+                ${tempoFaixaMedio.toFixed(1)}s
+            </text>
+        `;
+    });
+
+    wrapper.innerHTML = `
+        <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="overflow: visible;">
+            <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" stroke="var(--border)" stroke-width="1" />
+            ${barrasHTML}
+            ${legendasHTML}
+        </svg>
+    `;
+}
+
+// ==========================================
+// 3. IDENTIFICADOR INTELIGENTE DE GARGALOS (SCANNER COGNITIVO)
+// ==========================================
+function calcularDiagnosticoGargalos() {
+    const displayElement = document.getElementById('bottleneck-diagnostics');
+    if (!displayElement) return;
+
+    // Filtra apenas os tempos do histórico que possuem um caso vinculado de verdade
+    const temposComCaso = historicoTempos.filter(t => t.caso);
+    
+    if (temposComCaso.length < 3) {
+        displayElement.innerHTML = `❌ Dados insuficientes para escanear gargalos. Vincule ao menos <strong>3 solves</strong> a casos usando o painel pós-solve.`;
+        return;
+    }
+
+    // Calcula a média global pura de referência
+    const mediaGlobal = historicoTempos.reduce((acc, t) => acc + t.tempo, 0) / historicoTempos.length;
+
+    // Agrupa os tempos por ID de Caso
+    const mapaCasos = {};
+    temposComCaso.forEach(t => {
+        if (!mapaCasos[t.caso]) mapaCasos[t.caso] = [];
+        mapaCasos[t.caso].push(t.tempo);
+    });
+
+    let piorCasoID = null;
+    let maiorDiferenca = -Infinity;
+    let mediaDoPiorCaso = 0;
+
+    // Vasculha o mapa para achar qual caso está mais distante e acima da média geral
+    for (const casoId in mapaCasos) {
+        const temposDoCaso = mapaCasos[casoId];
+        const mediaDoCaso = temposDoCaso.reduce((acc, v) => acc + v, 0) / temposDoCaso.length;
+        const diferenca = mediaDoCaso - mediaGlobal;
+
+        // Queremos achar o caso mais lento que a média geral
+        if (diferenca > maiorDiferenca && temposDoCaso.length >= 1) {
+            maiorDiferenca = diferenca;
+            piorCasoID = casoId;
+            mediaDoPiorCaso = mediaDoCaso;
+        }
+    }
+
+    // Se o pior caso encontrado for mais lento que a média do usuário em pelo menos 0.5 segundos, avisa!
+    if (piorCasoID && maiorDiferenca > 0.5) {
+        const infoCaso = listaCasos.find(c => c.id === piorCasoID);
+        const nomeDoCaso = infoCaso ? `${infoCaso.grupo} - ${infoCaso.nome}` : piorCasoID;
+        
+        displayElement.innerHTML = `
+            <span style="color: var(--danger); font-weight: bold; display: block; margin-bottom: 4px;">⚠️ GARGALO CRÍTICO DETECTADO!</span>
+            Sua média geral é de <strong>${mediaGlobal.toFixed(2)}s</strong>, mas o seu rendimento no <strong style="color: var(--accent);">${nomeDoCaso}</strong> está em <strong>${mediaDoPiorCaso.toFixed(2)}s</strong>. 
+            Você está perdendo em média <span style="color: var(--danger); font-weight: bold;">+${maiorDiferenca.toFixed(2)}s</span> sempre que este caso aparece. Foque em treinar esse algoritmo!
+        `;
+    } else {
+        displayElement.innerHTML = `
+            <span style="color: var(--success); font-weight: bold; display: block; margin-bottom: 4px;">✅ COMPORTAMENTO HOMOGÊNEO!</span>
+            Seus algoritmos vinculados estão alinhados e equilibrados com a sua média global de <strong>${mediaGlobal.toFixed(2)}s</strong>. Continue praticando!
+        `;
     }
 }
