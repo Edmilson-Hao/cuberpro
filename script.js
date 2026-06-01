@@ -19,11 +19,11 @@ const listaCasos = [
     { id: "oll-16", grupo: "OLL", nome: "Caso 16", algoritmo: "Rw U R' U' M U R U' R'", imagem: "oll-caso-16.png" },
     { id: "oll-17", grupo: "OLL", nome: "Caso 17", algoritmo: "R U R' U' M' U R U' Rw'", imagem: "oll-caso-17.png" },
     { id: "oll-18", grupo: "OLL", nome: "Caso 18", algoritmo: "R' U' R' F R F' U R", imagem: "oll-caso-18.png" },
-    { id: "oll-19", grupo: "OLL", nome: "Caso 19", algoritmo: "R U R2 U' R' F R U R U' F'", imagem: "oll-caso-19-.png" }, // Hífen extra detectado na imagem da pasta
+    { id: "oll-19", grupo: "OLL", nome: "Caso 19", algoritmo: "R U R2 U' R' F R U R U' F'", imagem: "oll-caso-19-.png" },
     { id: "oll-20", grupo: "OLL", nome: "Caso 20", algoritmo: "F R U' R' U' R U R' F'", imagem: "oll-caso-20.png" },
     { id: "oll-21", grupo: "OLL", nome: "Caso 21", algoritmo: "R U2 R2 F R F' R U2 R'", imagem: "oll-caso-21.png" },
     { id: "oll-22", grupo: "OLL", nome: "Caso 22", algoritmo: "R U R' U R' F R F' R U2 R'", imagem: "oll-caso-22.png" },
-    { id: "oll-23", grupo: "OLL", nome: "Caso 23", algoritmo: "R U R' U' R' F R2 U R' U' F'", imagem: "oll-caso-23-.png" }, // Hífen extra detectado na imagem da pasta
+    { id: "oll-23", grupo: "OLL", nome: "Caso 23", algoritmo: "R U R' U' R' F R2 U R' U' F'", imagem: "oll-caso-23-.png" },
     { id: "oll-24", grupo: "OLL", nome: "Caso 24", algoritmo: "Rw U R' U R U2 Rw'", imagem: "oll-caso-24.png" },
     { id: "oll-25", grupo: "OLL", nome: "Caso 25", algoritmo: "Rw' U' R U' R' U2 Rw", imagem: "oll-caso-25.png" },
     { id: "oll-26", grupo: "OLL", nome: "Caso 26", algoritmo: "Rw' R2 U R' U R U2 R' U M'", imagem: "oll-caso-26.png" },
@@ -44,7 +44,7 @@ const listaCasos = [
     { id: "oll-41", grupo: "OLL", nome: "Caso 41", algoritmo: "Rw U Rw' U R U' R' U R U' R' Rw U' Rw'", imagem: "oll-caso-41.png" },
     { id: "oll-42", grupo: "OLL", nome: "Caso 42", algoritmo: "R U R' U R Dw' R U' R' F'", imagem: "oll-caso-42.png" },
     { id: "oll-43", grupo: "OLL", nome: "Caso 43", algoritmo: "R U2 R2 U' R U' R' U2 F R F'", imagem: "oll-caso-43.png" },
-    { id: "oll-44", group: "OLL", nome: "Caso 44", algoritmo: "R' U' R U' R' U2 R F R U R' U' F'", imagem: "oll-caso-44.png" },
+    { id: "oll-44", grupo: "OLL", nome: "Caso 44", algoritmo: "R' U' R U' R' U2 R F R U R' U' F'", imagem: "oll-caso-44.png" },
     { id: "oll-45", grupo: "OLL", nome: "Caso 45", algoritmo: "R U R' U R U2 R' F R U R' U' F'", imagem: "oll-caso-45.png" },
     { id: "oll-46", grupo: "OLL", nome: "Caso 46", algoritmo: "M U R U R' U' R' F R F' M'", imagem: "oll-caso-46.png" },
     { id: "oll-47", grupo: "OLL", nome: "Caso 47", algoritmo: "F U R U2 R' U' R U2 R' U' F'", imagem: "oll-caso-47.png" },
@@ -74,7 +74,7 @@ const listaCasos = [
     { id: "pll-r1", grupo: "PLL", nome: "Caso R1", algoritmo: "R U' R' U' R U R D R' U' R D' R' U2 R' U'", imagem: "pll-caso-r1-01.png" },
     { id: "pll-r2", grupo: "PLL", nome: "Caso R2", algoritmo: "R' U2 R U2' R' F R U R' U' R' F' R2 U'", imagem: "pll-caso-r2-01.png" },
     { id: "pll-j1", grupo: "PLL", nome: "Caso J1", algoritmo: "x R2 F R F' R U2 Rw' U Rw U2 x'", imagem: "pll-caso-j1-01.png" },
-    { id: "pll-j2", group: "PLL", nome: "Caso J2", algoritmo: "R U R' F' R U R' U' R' F R2 U' R' U'", imagem: "pll-caso-j2-01.png" },
+    { id: "pll-j2", grupo: "PLL", nome: "Caso J2", algoritmo: "R U R' F' R U R' U' R' F R2 U' R' U'", imagem: "pll-caso-j2-01.png" },
     { id: "pll-n1", grupo: "PLL", nome: "Caso N1", algoritmo: "R U R' U R U R' F' R U R' U' R' F R2 U' R' U2 R U' R'", imagem: "pll-caso-n1-01.png" },
     { id: "pll-n2", grupo: "PLL", nome: "Caso N2", algoritmo: "R' U R U' R' F' U' F R U R' F R' F' R U' R", imagem: "pll-caso-n2-01.png" },
     { id: "pll-g1", grupo: "PLL", nome: "Caso G1", algoritmo: "R2' Uw R' U R' U' R Uw' R2 y' R' U R", imagem: "pll-caso-g1-01.png" },
@@ -86,6 +86,7 @@ const listaCasos = [
 // ESTADO GLOBAL DO APLICATIVO
 let progresso = JSON.parse(localStorage.getItem('cube_progresso')) || {};
 let historicoTempos = JSON.parse(localStorage.getItem('cube_historico_tempos')) || [];
+let streakDados = JSON.parse(localStorage.getItem('cube_streak_dados')) || { dias: 0, ultimaData: "", solvesHoje: 0 };
 let grupoAtivo = 'OLL';
 let telaAtiva = 'screen-study';
 let casoEstudoAtual = null;
@@ -98,19 +99,17 @@ let timerInterval = null;
 let holdingTimeout = null;
 let currentScramble = '';
 
-// Garanta que dentro do DOMContentLoaded esteja assim:
 window.addEventListener('DOMContentLoaded', () => {
     initTheme();
     configurarAbas();
     configurarFiltroGrupo();
     configurarTimerEvents();
     
+    atualizarEVerificarStreak();
     carregarNovoTimer();
     renderizarTelas();
     
     document.getElementById('btn-clear-history').addEventListener('click', limparHistorico);
-
-    // Esta função agora inicializa os dois botões novos e gerencia o input oculto
     processarBackupRecebido(); 
 });
 
@@ -122,12 +121,18 @@ function initTheme() {
     document.getElementById('theme-toggle').addEventListener('click', () => {
         document.body.classList.toggle('dark');
         localStorage.setItem('cube_dark_mode', document.body.classList.contains('dark'));
+        if (telaAtiva === 'screen-times') renderizarGraficoEvolucao();
     });
 }
 
 function configurarAbas() {
     document.querySelectorAll('nav .nav-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
+            // REGRA 1: Se mudar de tela enquanto o timer estiver correndo, força o DNF na hora
+            if (timerStatus === 'RUNNING') {
+                aplicarDNF();
+            }
+
             const target = e.currentTarget.getAttribute('data-target');
             document.querySelectorAll('nav .nav-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.main-content').forEach(screen => screen.classList.add('hidden'));
@@ -187,20 +192,39 @@ function renderizarTelas() {
     if (telaAtiva === 'screen-study') renderizarEstudo();
     if (telaAtiva === 'screen-review') renderizarRevisao();
     if (telaAtiva === 'screen-timer') renderizarValoresTimer();
-    if (telaAtiva === 'screen-times') renderizarHistorico();
-    if (telaAtiva === 'screen-manage') renderizarGerenciador();
+    if (telaAtiva === 'screen-times') {
+        renderizarHistorico();
+        renderizarGraficoEvolucao();
+    }
+    if (telaAtiva === 'screen-manage') {
+        renderizarGerenciador();
+        atualizarPainelVisualStreak();
+    }
 }
 
 function configurarTimerEvents() {
     const areaToque = document.getElementById('timer-touch-area');
     const display = document.getElementById('time-counter');
+    const btnDnf = document.getElementById('btn-timer-dnf');
+
+    // Evento mobile prioritário para o botão DNF
+    if (btnDnf) {
+        btnDnf.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            aplicarDNF(e);
+        }, { passive: false });
+        btnDnf.addEventListener('click', (e) => {
+            aplicarDNF(e);
+        });
+    }
 
     const iniciarPreparacao = (e) => {
-        e.preventDefault();
+        if (e.target && (e.target.id === 'btn-timer-dnf' || e.target.closest('#btn-timer-dnf'))) return;
+        if (e.preventDefault) e.preventDefault();
 
-        // Se terminou um solve, o primeiro toque apenas prepara o próximo scramble sem zerar a tela
         if (timerStatus === 'STOPPED') {
             document.getElementById('record-badge').classList.add('hidden');
+            if (btnDnf) btnDnf.classList.add('hidden');
             currentScramble = gerarScrambleWCA();
             document.getElementById('scramble-display').innerText = currentScramble;
             timerStatus = 'IDLE';
@@ -223,14 +247,16 @@ function configurarTimerEvents() {
     };
 
     const dispararTimer = (e) => {
-        e.preventDefault();
+        if (e.target && (e.target.id === 'btn-timer-dnf' || e.target.closest('#btn-timer-dnf'))) return;
+        if (e.preventDefault) e.preventDefault();
+
         if (timerStatus === 'HOLDING') {
             clearTimeout(holdingTimeout);
             timerStatus = 'IDLE';
             display.className = "timer-display";
         } else if (timerStatus === 'READY') {
             timerStatus = 'RUNNING';
-            // O tempo antigo só some da tela e vira "0.00" aqui, no início real do novo solve!
+            if (btnDnf) btnDnf.classList.remove('hidden');
             display.innerText = "0.00";
             timerStartTime = performance.now();
             timerInterval = setInterval(() => {
@@ -243,16 +269,42 @@ function configurarTimerEvents() {
     areaToque.addEventListener('touchstart', iniciarPreparacao, { passive: false });
     areaToque.addEventListener('touchend', dispararTimer, { passive: false });
 
+    // REGRA 2: Suporte a teclado no computador (Espaço para armar/parar | Esc ou Backspace para DNF)
     window.addEventListener('keydown', (e) => {
+        if (timerStatus === 'RUNNING' && (e.code === 'Escape' || e.code === 'Backspace')) {
+            e.preventDefault();
+            aplicarDNF(e);
+            return;
+        }
+
         if (e.code === 'Space' && telaAtiva === 'screen-timer' && !e.repeat) {
             iniciarPreparacao(e);
         }
     });
+
     window.addEventListener('keyup', (e) => {
         if (e.code === 'Space' && telaAtiva === 'screen-timer') {
             dispararTimer(e);
         }
     });
+}
+
+function aplicarDNF(e) {
+    if (e) {
+        if (e.preventDefault) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
+    }
+    clearInterval(timerInterval);
+    
+    const display = document.getElementById('time-counter');
+    const btnDnf = document.getElementById('btn-timer-dnf');
+    
+    if (display) {
+        display.innerText = "DNF";
+        display.className = "timer-display stopped";
+    }
+    if (btnDnf) btnDnf.classList.add('hidden');
+    timerStatus = 'STOPPED';
 }
 
 function carregarNovoTimer() {
@@ -265,6 +317,9 @@ function carregarNovoTimer() {
 
 function pararTimer() {
     clearInterval(timerInterval);
+    const btnDnf = document.getElementById('btn-timer-dnf');
+    if (btnDnf) btnDnf.classList.add('hidden');
+
     const finalTime = parseFloat(((performance.now() - timerStartTime) / 1000).toFixed(2));
     document.getElementById('time-counter').innerText = finalTime.toFixed(2);
     
@@ -289,9 +344,8 @@ function pararTimer() {
     historicoTempos.unshift(novoTempo);
     localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoTempos));
 
+    registrarSolveNoStreak();
     checarConquistasERecordes(finalTime, oldBest, isFirstRecord, oldAo5, oldAo12);
-
-    // O reset automático que estava aqui foi removido para manter o tempo na tela!
 }
 
 function checarConquistasERecordes(finalTime, oldBest, isFirstRecord, oldAo5, oldAo12) {
@@ -358,7 +412,6 @@ function renderizarValoresTimer(oldAo5 = null, oldAo12 = null) {
         } else { trendAo12El.innerText = ""; }
     } else { ao12El.innerText = "-"; trendAo12El.innerText = ""; }
 
-    // RENDERIZAÇÃO DOS NOVOS COMPONENTES SOLICITADOS (Ao50 e Ao100)
     if (ao50El) ao50El.innerText = currentAo50 !== null ? currentAo50.toFixed(2) + "s" : "-";
     if (ao100El) ao100El.innerText = currentAo100 !== null ? currentAo100.toFixed(2) + "s" : "-";
 }
@@ -366,8 +419,8 @@ function renderizarValoresTimer(oldAo5 = null, oldAo12 = null) {
 function renderizarHistorico() {
     const container = document.getElementById('times-list-container');
     const averagesSub = document.getElementById('times-screen-averages');
+    if (!container) return;
     
-    // 1. ATUALIZAÇÃO INDIVIDUAL E SIMÉTRICA DAS QUATRO MÉDIAS NAS CAIXINHAS GLOBAIS
     const configuracaoAverages = [
         { n: 5, spanId: 'timer-ao5', trendId: 'trend-ao5' },
         { n: 12, spanId: 'timer-ao12', trendId: 'trend-ao12' },
@@ -378,11 +431,9 @@ function renderizarHistorico() {
     configuracaoAverages.forEach(({ n, spanId, trendId }) => {
         const elSpan = document.getElementById(spanId);
         const elTrend = document.getElementById(trendId);
-        
         if (!elSpan) return;
 
         const atual = calcularAoN(historicoTempos, n);
-        
         if (!atual) {
             elSpan.innerText = "-";
             if (elTrend) { elTrend.innerText = ""; elTrend.className = ""; }
@@ -407,24 +458,16 @@ function renderizarHistorico() {
                     elTrend.innerText = "■";
                     elTrend.className = "";
                 }
-            } else {
-                elTrend.innerText = "";
-                elTrend.className = "";
-            }
-        } else if (elTrend) {
-            elTrend.innerText = "";
-            elTrend.className = "";
-        }
+            } else { elTrend.innerText = ""; elTrend.className = ""; }
+        } else if (elTrend) { elTrend.innerText = ""; elTrend.className = ""; }
     });
 
-    // 2. VERIFICAÇÃO DE HISTÓRICO VAZIO
     if (historicoTempos.length === 0) {
         container.innerHTML = `<div class="empty-state"><p>Nenhum tempo registrado.</p></div>`;
         if (averagesSub) averagesSub.innerText = "ao5: - | ao12: - | ao50: - | ao100: -";
         return;
     }
 
-    // 3. ATUALIZAÇÃO DO TEXTO DO SUB-CABEÇALHO SECUNDÁRIO NATIVO
     if (averagesSub) {
         const curAo5 = calcularAoN(historicoTempos, 5);
         const curAo12 = calcularAoN(historicoTempos, 12);
@@ -433,14 +476,9 @@ function renderizarHistorico() {
         averagesSub.innerText = `ao5: ${curAo5 ? curAo5.toFixed(2)+'s' : '-'} | ao12: ${curAo12 ? curAo12.toFixed(2)+'s' : '-'} | ao50: ${curAo50 ? curAo50.toFixed(2)+'s' : '-'} | ao100: ${curAo100 ? curAo100.toFixed(2)+'s' : '-'}`;
     }
 
-    // 4. RESTAURAÇÃO DO FILTRO: Filtra e ordena estritamente os TOP 12 Melhores Tempos (Ranking)
-    const top12Melhores = [...historicoTempos]
-        .sort((a, b) => a.tempo - b.tempo)
-        .slice(0, 12);
+    const top12Melhores = [...historicoTempos].sort((a, b) => a.tempo - b.tempo).slice(0, 12);
 
-    // 5. RENDERIZAÇÃO DAS LINHAS DO RANKING
     container.innerHTML = top12Melhores.map((t, idx) => {
-        // Mapeia metadados do caso (Nome e Algoritmo)
         const casoObj = listaCasos.find(c => c.id === t.caso);
         const nomeCaso = casoObj ? casoObj.nome : (t.caso || "Geral");
         const algoritmoCaso = casoObj ? casoObj.algoritmo : "Sem algoritmo mapeado";
@@ -470,7 +508,6 @@ function renderizarHistorico() {
         `;
     }).join('');
 
-    // 6. RE-VINCULAÇÃO DOS COMPORTAMENTOS DE EXPANSÃO NATIVOS (ACCORDION)
     document.querySelectorAll('.time-row-summary').forEach(summary => {
         summary.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-delete-time')) return;
@@ -479,7 +516,6 @@ function renderizarHistorico() {
         });
     });
 
-    // 7. RE-VINCULAÇÃO DA EXCLUSÃO INDIVIDUAL DE REGISTROS
     document.querySelectorAll('[data-del]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -488,17 +524,118 @@ function renderizarHistorico() {
                 historicoTempos = historicoTempos.filter(t => t.id !== idDeletar);
                 localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoTempos));
                 renderizarHistorico();
+                renderizarGraficoEvolucao();
             }
         });
     });
 }
 
-// 1. FUNÇÃO DE EXPORTAÇÃO (Gera e baixa o arquivo .json na hora)
+function renderizarGraficoEvolucao() {
+    const wrapper = document.getElementById('svg-chart-wrapper');
+    if (!wrapper) return;
+
+    const ultimosSolves = historicoTempos.slice(0, 15).reverse();
+    
+    if (ultimosSolves.length < 2) {
+        wrapper.innerHTML = `<div style="font-size:0.8rem; color:var(--text-secondary); text-align:center; padding-top:35px;">Registre ao menos 2 tempos para ver a evolução.</div>`;
+        return;
+    }
+
+    const temposValores = ultimosSolves.map(s => s.tempo);
+    const maxTempo = Math.max(...temposValores);
+    const minTempo = Math.min(...temposValores);
+    const range = maxTempo - minTempo === 0 ? 1 : maxTempo - minTempo;
+
+    const width = wrapper.clientWidth || 400;
+    const height = 100;
+    const paddingX = 20;
+    const paddingY = 15;
+
+    const chartWidth = width - (paddingX * 2);
+    const chartHeight = height - (paddingY * 2);
+    const passoX = chartWidth / (ultimosSolves.length - 1);
+
+    let pontosPath = "";
+    let pontosCirculos = "";
+
+    ultimosSolves.forEach((solve, i) => {
+        const x = paddingX + (i * passoX);
+        const y = paddingY + chartHeight - (((solve.tempo - minTempo) / range) * chartHeight);
+        
+        if (i === 0) {
+            pontosPath += `M ${x} ${y}`;
+        } else {
+            pontosPath += ` L ${x} ${y}`;
+        }
+        pontosCirculos += `<circle cx="${x}" cy="${y}" r="3" fill="var(--accent)" stroke="var(--bg-card)" stroke-width="1"/>`;
+    });
+
+    const corStroke = document.body.classList.contains('dark') ? '#3b82f6' : '#2563eb';
+
+    wrapper.innerHTML = `
+        <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="overflow: visible;">
+            <line x1="${paddingX}" y1="${paddingY}" x2="${width - paddingX}" y2="${paddingY}" stroke="var(--border)" stroke-dasharray="3,3" />
+            <line x1="${paddingX}" y1="${height - paddingY}" x2="${width - paddingX}" y2="${height - paddingY}" stroke="var(--border)" stroke-dasharray="3,3" />
+            <path d="${pontosPath}" fill="none" stroke="${corStroke}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            ${pontosCirculos}
+        </svg>
+    `;
+}
+
+function obterDataHoje() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function atualizarEVerificarStreak() {
+    const hoje = obterDataHoje();
+    
+    if (streakDados.ultimaData !== hoje) {
+        if (streakDados.ultimaData !== "") {
+            const dataUltima = new Date(streakDados.ultimaData + "T00:00:00");
+            const dataHoje = new Date(hoje + "T00:00:00");
+            const diferencaDias = Math.floor((dataHoje - dataUltima) / (1000 * 60 * 60 * 24));
+            
+            if (diferencaDias > 1 && streakDados.solvesHoje < 10) {
+                streakDados.dias = 0; 
+            }
+        }
+        streakDados.solvesHoje = 0; 
+        streakDados.ultimaData = hoje;
+        localStorage.setItem('cube_streak_dados', JSON.stringify(streakDados));
+    }
+}
+
+function registrarSolveNoStreak() {
+    atualizarEVerificarStreak();
+    streakDados.solvesHoje += 1;
+    
+    if (streakDados.solvesHoje === 10) {
+        streakDados.dias += 1;
+    }
+    localStorage.setItem('cube_streak_dados', JSON.stringify(streakDados));
+}
+
+function atualizarPainelVisualStreak() {
+    const elDias = document.getElementById('streak-days');
+    const elMeta = document.getElementById('streak-meta-text');
+    
+    if (elDias) elDias.innerText = streakDados.dias;
+    if (elMeta) {
+        if (streakDados.solvesHoje >= 10) {
+            elMeta.innerHTML = `<span style="color: var(--success); font-weight: bold;">Meta Concluída! ✓</span>`;
+        } else {
+            elMeta.innerText = `Solves hoje: ${streakDados.solvesHoje}/10`;
+        }
+    }
+}
+
 function exportarDadosJSON() {
     try {
         const pacoteDados = {
             progresso: JSON.parse(localStorage.getItem('cube_progresso') || "{}"),
-            historico: JSON.parse(localStorage.getItem('cube_historico_tempos') || "[]")
+            historico: JSON.parse(localStorage.getItem('cube_historico_tempos') || "[]"),
+            streak: JSON.parse(localStorage.getItem('cube_streak_dados') || "{}")
         };
         
         const jsonString = JSON.stringify(pacoteDados, null, 2);
@@ -523,11 +660,9 @@ function exportarDadosJSON() {
 }
 
 function processarBackupRecebido() {
-    // Remove se já existir um input duplicado perdido na árvore DOM
     const existente = document.getElementById('input-import-json-oculto');
     if (existente) existente.remove();
 
-    // Cria o seletor de arquivos oculto do sistema com ID persistente
     const inputArquivoOculto = document.createElement('input');
     inputArquivoOculto.type = 'file';
     inputArquivoOculto.accept = '.json';
@@ -548,12 +683,15 @@ function processarBackupRecebido() {
                         
                         const stringProgresso = JSON.stringify(dadosImportados.progresso || {});
                         const stringHistorico = JSON.stringify(dadosImportados.historico || []);
+                        const stringStreak = JSON.stringify(dadosImportados.streak || { dias: 0, ultimaData: "", solvesHoje: 0 });
 
                         localStorage.setItem('cube_progresso', stringProgresso);
                         localStorage.setItem('cube_historico_tempos', stringHistorico);
+                        localStorage.setItem('cube_streak_dados', stringStreak);
                         
                         progresso = JSON.parse(stringProgresso);
                         historicoTempos = JSON.parse(stringHistorico);
+                        streakDados = JSON.parse(stringStreak);
                         
                         alert("✅ Dados restaurados com sucesso!");
                         renderizarTelas();
@@ -578,6 +716,7 @@ function limparHistorico() {
         historicoTempos = [];
         localStorage.removeItem('cube_historico_tempos');
         renderizarHistorico();
+        renderizarGraficoEvolucao();
     }
 }
 
@@ -628,6 +767,7 @@ function gerarScrambleWCA() {
 
 function renderizarEstudo() {
     const container = document.getElementById('study-container');
+    if (!container) return;
     const casosNaoEstudados = listaCasos.filter(c => c.grupo === grupoAtivo && !obterDadosCaso(c.id).estudado);
 
     if (casosNaoEstudados.length === 0) {
@@ -673,6 +813,7 @@ function renderizarEstudo() {
 
 function renderizarRevisao() {
     const container = document.getElementById('review-container');
+    if (!container) return;
     const casosEstudados = listaCasos.filter(c => c.grupo === grupoAtivo && obterDadosCaso(c.id).estudado);
 
     if (casosEstudados.length === 0) {
@@ -723,6 +864,7 @@ function renderizarRevisao() {
 function renderizarGerenciador() {
     const statsBox = document.getElementById('manage-stats');
     const listContainer = document.getElementById('manage-list-container');
+    if (!statsBox || !listContainer) return;
 
     const casosFiltrados = listaCasos.filter(c => c.grupo === grupoAtivo);
     const total = casosFiltrados.length;
@@ -733,7 +875,6 @@ function renderizarGerenciador() {
         <div>Progresso: <strong>${concluidos} / ${total}</strong></div>
     `;
 
-    // CORREÇÃO DA FOTO: Adicionado o caminho correto 'imagens/' antes do nome do arquivo de imagem
     listContainer.innerHTML = casosFiltrados.map(c => {
         const dados = obterDadosCaso(c.id);
         return `
@@ -759,19 +900,16 @@ function renderizarGerenciador() {
         });
     });
 
-    // CORREÇÃO DOS BOTÕES: Re-vincula os eventos de clique sempre que a tela gerenciar renderizar
     const btnExport = document.getElementById('btn-export-json');
     const btnImport = document.getElementById('btn-import-json');
-    
-    // Busca o input oculto gerado pelo sistema
     let inputArquivoOculto = document.getElementById('input-import-json-oculto');
 
     if (btnExport) {
-        btnExport.replaceWith(btnExport.cloneNode(true)); // Limpa listeners órfãos antigos
+        btnExport.replaceWith(btnExport.cloneNode(true));
         document.getElementById('btn-export-json').addEventListener('click', exportarDadosJSON);
     }
     if (btnImport && inputArquivoOculto) {
-        btnImport.replaceWith(btnImport.cloneNode(true)); // Limpa listeners órfãos antigos
+        btnImport.replaceWith(btnImport.cloneNode(true));
         document.getElementById('btn-import-json').addEventListener('click', () => inputArquivoOculto.click());
     }
 }

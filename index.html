@@ -39,18 +39,21 @@
     <main class="main-content hidden" id="screen-timer">
         <div id="timer-screen">
             <div class="scramble-box" id="scramble-display">Gerando scramble...</div>
+            
             <div class="timer-touch-zone" id="timer-touch-area">
                 <div id="record-badge" class="record-badge hidden"></div>
                 
                 <div class="timer-display" id="time-counter">0.00</div>
                 
-                <div class="timer-stats-row" style="flex-wrap: wrap; justify-content: center; gap: 10px;">
-                    <div class="stat-box">ao5: <span id="timer-ao5">-</span> <small id="trend-ao5"></small></div>
-                    <div class="stat-box">ao12: <span id="timer-ao12">-</span> <small id="trend-ao12"></small></div>
-                    <div class="stat-box">ao50: <span id="timer-ao50">-</span> <small id="trend-ao50"></small></div>
-                    <div class="stat-box">ao100: <span id="timer-ao100">-</span> <small id="trend-ao100"></small></div>
-                </div>      
+                <button id="btn-timer-dnf" class="btn btn-danger hidden" style="position: absolute; top: 20px; right: 20px; padding: 8px 16px; font-size: 0.9rem; max-width: 80px; z-index: 9999;">DNF</button>
             </div>
+
+            <div class="timer-stats-row" style="flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 15px;">
+                <div class="stat-box">ao5: <span id="timer-ao5">-</span> <small id="trend-ao5"></small></div>
+                <div class="stat-box">ao12: <span id="timer-ao12">-</span> <small id="trend-ao12"></small></div>
+                <div class="stat-box">ao50: <span id="timer-ao50">-</span> <small id="trend-ao50"></small></div>
+                <div class="stat-box">ao100: <span id="timer-ao100">-</span> <small id="trend-ao100"></small></div>
+            </div>      
         </div>
     </main>
 
