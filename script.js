@@ -1,5 +1,7 @@
 // BASE DE DADOS COMPLETA DE ALGORITMOS (Mapeado exatamente com os arquivos da sua pasta)
 const listaCasos = [
+    { id: "oll-skip", grupo: "OLL", nome: "OLL Skip (Pular OLL)", algoritmo: "Nenhum (Já veio orientado!)", imagem: "oll-skip.png" },
+    { id: "pll-skip", grupo: "PLL", nome: "PLL Skip (Pular PLL)", algoritmo: "Nenhum (Cubos resolvido!)", imagem: "pll-skip.png" },
     // GRUPO OLL (1 a 57)
     { id: "oll-01", grupo: "OLL", nome: "Caso 01", algoritmo: "R U R' U R U2 R'", imagem: "oll-caso-01.png" },
     { id: "oll-02", grupo: "OLL", nome: "Caso 02", algoritmo: "R' U' R U' R' U2 R", imagem: "oll-caso-02.png" },
@@ -102,6 +104,17 @@ let currentScramble = '';
 let idSolveParaVincular = null;
 let grupoModalAtivo = 'OLL';
 
+// NOVAS VARIÁVEIS (Inspeção WCA e Ghost Solve)
+let inspecaoWCA = localStorage.getItem('cube_wca_inspection') === 'true';
+let inspectionStartTime = 0;
+let inspectionInterval = null;
+let tempoInspecaoRestante = 15;
+let voice8s = false;
+let voice12s = false;
+let penaltyInspecao = 0; // 0, 2 (para +2s) ou 'DNF'
+let recordeFantasma = Infinity;
+let idiomaInspecao = localStorage.getItem('cube_inspection_lang') || 'pt'; // 'pt' ou 'en'
+
 window.addEventListener('DOMContentLoaded', () => {
     initTheme();
     configurarAbas();
@@ -112,7 +125,7 @@ window.addEventListener('DOMContentLoaded', () => {
     carregarNovoTimer();
     renderizarTelas();
     
-    document.getElementById('btn-clear-history').addEventListener('click', limparHistorico);
+    document.getElementById('btn-clear-history')?.addEventListener('click', limparHistorico);
     processarBackupRecebido(); 
     
     document.getElementById('btn-fechar-modal-caso').addEventListener('click', () => {
@@ -213,32 +226,222 @@ function renderizarTelas() {
     }
 }
 
+// ==========================================
+// MOTOR PROFISSIONAL DE TIMER (INSPEÇÃO WCA + GHOST SOLVE)
+// ==========================================
+// ==========================================
+// INJEÇÃO DINÂMICA DE ELEMENTOS DO TIMER
+// ==========================================
+
+function injetarElementosTimer() {
+    const display = document.getElementById('time-counter');
+    if (!display) return;
+
+    // 1. O Fantasma (Ghost Solve PB Tracker)
+    if (!document.getElementById('ghost-display')) {
+        const ghost = document.createElement('div');
+        ghost.id = 'ghost-display';
+        ghost.style.fontSize = '1.1rem';
+        ghost.style.marginTop = '10px';
+        ghost.style.fontWeight = '600';
+        ghost.style.color = 'var(--text-secondary)';
+        ghost.style.transition = 'color 0.2s';
+        display.parentNode.insertBefore(ghost, display.nextSibling);
+    }
+
+    // 2. Painel de Controle (Botões de Inspeção WCA, Idioma e +2)
+    const dnfBtn = document.getElementById('btn-timer-dnf');
+    if (dnfBtn && !document.getElementById('btn-toggle-inspection')) {
+        const wrapAcoes = document.createElement('div');
+        wrapAcoes.className = 'btn-acoes-timer';
+        wrapAcoes.style.display = 'flex';
+        wrapAcoes.style.gap = '10px';
+        wrapAcoes.style.justifyContent = 'center';
+        wrapAcoes.style.marginTop = '20px';
+        wrapAcoes.style.flexWrap = 'wrap';
+
+        // Botão Ativar/Desativar Inspeção
+        const btnInspecao = document.createElement('button');
+        btnInspecao.id = 'btn-toggle-inspection';
+        btnInspecao.className = 'btn';
+        btnInspecao.style.background = 'var(--bg-main)';
+        btnInspecao.style.border = '1px solid var(--border)';
+        btnInspecao.style.padding = '8px 16px';
+        btnInspecao.style.borderRadius = '8px';
+        btnInspecao.style.cursor = 'pointer';
+        btnInspecao.style.fontWeight = 'bold';
+        
+        const atualizarBtnInspecao = () => {
+            btnInspecao.innerText = inspecaoWCA ? '🎙️ Inspeção WCA: ON' : '👁️ Inspeção WCA: OFF';
+            btnInspecao.style.color = inspecaoWCA ? 'var(--warning)' : 'var(--text-secondary)';
+            btnInspecao.style.borderColor = inspecaoWCA ? 'var(--warning)' : 'var(--border)';
+        };
+        atualizarBtnInspecao();
+
+        btnInspecao.onclick = (e) => {
+            e.stopPropagation();
+            inspecaoWCA = !inspecaoWCA;
+            localStorage.setItem('cube_wca_inspection', inspecaoWCA);
+            atualizarBtnInspecao();
+        };
+
+        // NOVO: Botão Verde/Amarelo para Mudar o Idioma da Voz
+        const btnIdioma = document.createElement('button');
+        btnIdioma.id = 'btn-toggle-inspection-lang';
+        btnIdioma.className = 'btn';
+        btnIdioma.style.background = 'var(--bg-main)';
+        btnIdioma.style.border = '1px solid var(--border)';
+        btnIdioma.style.padding = '8px 16px';
+        btnIdioma.style.borderRadius = '8px';
+        btnIdioma.style.cursor = 'pointer';
+        btnIdioma.style.fontWeight = 'bold';
+
+        const atualizarBtnIdioma = () => {
+            btnIdioma.innerText = idiomaInspecao === 'pt' ? '🇧🇷 Voz: PT' : '🇺🇸 Voice: EN';
+            btnIdioma.style.color = 'var(--text-secondary)';
+            btnIdioma.style.borderColor = 'var(--border)';
+        };
+        atualizarBtnIdioma();
+
+        btnIdioma.onclick = (e) => {
+            e.stopPropagation();
+            idiomaInspecao = idiomaInspecao === 'pt' ? 'en' : 'pt';
+            localStorage.setItem('cube_inspection_lang', idiomaInspecao);
+            atualizarBtnIdioma();
+        };
+
+        // Botão +2 Retroativo
+        const btnPlus2 = document.createElement('button');
+        btnPlus2.id = 'btn-timer-plus2';
+        btnPlus2.className = 'btn hidden';
+        btnPlus2.style.background = 'var(--warning)';
+        btnPlus2.style.color = '#000';
+        btnPlus2.style.padding = '8px 16px';
+        btnPlus2.style.borderRadius = '8px';
+        btnPlus2.style.fontWeight = 'bold';
+        btnPlus2.innerText = '+2 Segs';
+        btnPlus2.onclick = (e) => {
+            e.stopPropagation();
+            aplicarPlus2(e);
+        };
+
+        wrapAcoes.appendChild(btnInspecao);
+        wrapAcoes.appendChild(btnIdioma); // Adiciona o botão de idioma ao painel
+        wrapAcoes.appendChild(btnPlus2);
+        dnfBtn.parentNode.insertBefore(wrapAcoes, dnfBtn.nextSibling);
+    }
+}
+
+// ==========================================
+// SÍNTESE DE VOZ COM SUPORTE MULTI-IDIOMA
+// ==========================================
+
+function falarTexto(textoPt, textoEn) {
+    if ('speechSynthesis' in window) {
+        const usarPt = (idiomaInspecao === 'pt');
+        const msg = new SpeechSynthesisUtterance(usarPt ? textoPt : textoEn);
+        msg.lang = usarPt ? 'pt-BR' : 'en-US'; 
+        msg.rate = 1.15; // Velocidade ligeiramente acelerada para precisão do tempo
+        window.speechSynthesis.speak(msg);
+    }
+}
+
+// ==========================================
+// CONTROLO DE INSPEÇÃO REVISADO E INTUITIVO
+// ==========================================
+
+function iniciarInspecao() {
+    timerStatus = 'INSPECTING';
+    tempoInspecaoRestante = 15;
+    voice8s = false;
+    voice12s = false;
+    penaltyInspecao = 0;
+    
+    const display = document.getElementById('time-counter');
+    const ghost = document.getElementById('ghost-display');
+    
+    if (display) {
+        display.innerText = "15";
+        display.style.color = "var(--warning)";
+    }
+    if (ghost) ghost.innerText = "Inspecionando o cubo...";
+
+    inspectionStartTime = performance.now();
+    
+    if (typeof inspectionInterval !== 'undefined') clearInterval(inspectionInterval);
+
+    inspectionInterval = setInterval(() => {
+        if (timerStatus !== 'INSPECTING' && timerStatus !== 'HOLDING_INSPECT') {
+            clearInterval(inspectionInterval);
+            return;
+        }
+
+        const decorrido = (performance.now() - inspectionStartTime) / 1000;
+        tempoInspecaoRestante = 15 - decorrido;
+
+        // CORREÇÃO LOGICA: Agora fala os segundos RESTANTES exatos na tela!
+        // Quando restam 7 segundos no visor (8s decorridos)
+        if (decorrido >= 8.0 && !voice8s) { 
+            voice8s = true;
+            falarTexto("7 segundos", "7 seconds");
+        }
+        // Quando restam 3 segundos no visor (12s decorridos)
+        if (decorrido >= 12.0 && !voice12s) { 
+            voice12s = true;
+            falarTexto("3 segundos", "3 seconds");
+        }
+
+        if (tempoInspecaoRestante > 0) {
+            display.innerText = Math.ceil(tempoInspecaoRestante);
+        } else if (tempoInspecaoRestante <= 0 && tempoInspecaoRestante > -2.0) {
+            display.innerText = "+2";
+            display.style.color = "var(--danger)";
+            penaltyInspecao = 2;
+        } else {
+            clearInterval(inspectionInterval);
+            display.innerText = "DNF";
+            display.className = "timer-display stopped";
+            display.style.color = "var(--danger)";
+            penaltyInspecao = 'DNF';
+            timerStatus = 'STOPPED';
+            falarTexto("Desclassificado", "DNF");
+        }
+    }, 100);
+}
+
+// ==========================================
+// MOTOR DE EVENTOS DO TIMER
+// ==========================================
+
 function configurarTimerEvents() {
+    injetarElementosTimer();
     const areaToque = document.getElementById('timer-touch-area');
     const display = document.getElementById('time-counter');
     const btnDnf = document.getElementById('btn-timer-dnf');
 
-    // Evento mobile prioritário para o botão DNF
-    if (btnDnf) {
-        btnDnf.addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-            aplicarDNF(e);
-        }, { passive: false });
-        btnDnf.addEventListener('click', (e) => {
-            aplicarDNF(e);
+    document.getElementById('btn-clear-history')?.addEventListener('click', limparHistorico);
+    
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const telaId = this.getAttribute('data-screen');
+            if (telaId) mudarTela(telaId);
         });
+    });
+
+    if (btnDnf) {
+        btnDnf.addEventListener('touchstart', (e) => { e.stopPropagation(); aplicarDNF(e); }, { passive: false });
+        btnDnf.addEventListener('click', (e) => { aplicarDNF(e); });
     }
 
     const iniciarPreparacao = (e) => {
-        if (e.target && (e.target.id === 'btn-timer-dnf' || e.target.closest('#btn-timer-dnf'))) return;
+        if (e.target && (e.target.closest('#btn-timer-dnf') || e.target.closest('.btn-acoes-timer') || e.target.closest('.nav-btn'))) return;
         if (e.preventDefault) e.preventDefault();
 
         if (timerStatus === 'STOPPED') {
-            document.getElementById('record-badge').classList.add('hidden');
-            if (btnDnf) btnDnf.classList.add('hidden');
-            currentScramble = gerarScrambleWCA();
-            document.getElementById('scramble-display').innerText = currentScramble;
-            timerStatus = 'IDLE';
+            document.getElementById('record-badge')?.classList.add('hidden');
+            display.style.color = "";
+            penaltyInspecao = 0;
+            carregarNovoTimer();
             return;
         }
 
@@ -246,48 +449,81 @@ function configurarTimerEvents() {
             pararTimer();
             return;
         }
-        if (timerStatus !== 'IDLE') return;
 
-        timerStatus = 'HOLDING';
-        display.className = "timer-display holding";
+        if (timerStatus === 'IDLE') {
+            if (inspecaoWCA) {
+                iniciarInspecao();
+            } else {
+                timerStatus = 'HOLDING';
+                display.className = "timer-display holding";
+                holdingTimeout = setTimeout(() => {
+                    timerStatus = 'READY';
+                    display.className = "timer-display ready";
+                }, 500);
+            }
+            return;
+        }
 
-        holdingTimeout = setTimeout(() => {
-            timerStatus = 'READY';
-            display.className = "timer-display ready";
-        }, 500);
+        if (timerStatus === 'INSPECTING') {
+            timerStatus = 'HOLDING_INSPECT';
+            display.className = "timer-display holding";
+            
+            clearTimeout(holdingTimeout);
+            holdingTimeout = setTimeout(() => {
+                timerStatus = 'READY';
+                display.className = "timer-display ready";
+                clearInterval(inspectionInterval); 
+            }, 500);
+        }
     };
 
     const dispararTimer = (e) => {
-        if (e.target && (e.target.id === 'btn-timer-dnf' || e.target.closest('#btn-timer-dnf'))) return;
+        if (e.target && (e.target.closest('#btn-timer-dnf') || e.target.closest('.btn-acoes-timer') || e.target.closest('.nav-btn'))) return;
         if (e.preventDefault) e.preventDefault();
 
         if (timerStatus === 'HOLDING') {
             clearTimeout(holdingTimeout);
             timerStatus = 'IDLE';
             display.className = "timer-display";
+        } else if (timerStatus === 'HOLDING_INSPECT') {
+            clearTimeout(holdingTimeout);
+            timerStatus = 'INSPECTING';
+            display.className = "timer-display inspecting";
         } else if (timerStatus === 'READY') {
+            clearInterval(inspectionInterval); 
+            
+            if (penaltyInspecao === 'DNF') {
+                timerStatus = 'STOPPED';
+                return;
+            }
+
             timerStatus = 'RUNNING';
+            display.className = "timer-display running";
+            display.style.color = ""; 
             if (btnDnf) btnDnf.classList.remove('hidden');
-            display.innerText = "0.00";
+            
             timerStartTime = performance.now();
+            recordeFantasma = historicoTempos.length > 0 ? Math.min(...historicoTempos.map(t => t.tempo)) : Infinity;
+
+            if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
-                const diff = performance.now() - timerStartTime;
-                display.innerText = (diff / 1000).toFixed(2);
+                const diff = (performance.now() - timerStartTime) / 1000;
+                display.innerText = diff.toFixed(2);
             }, 10);
         }
     };
 
-    areaToque.addEventListener('touchstart', iniciarPreparacao, { passive: false });
-    areaToque.addEventListener('touchend', dispararTimer, { passive: false });
+    if (areaToque) {
+        areaToque.addEventListener('touchstart', iniciarPreparacao, { passive: false });
+        areaToque.addEventListener('touchend', dispararTimer, { passive: false });
+    }
 
-    // REGRA 2: Suporte a teclado no computador (Espaço para armar/parar | Esc ou Backspace para DNF)
     window.addEventListener('keydown', (e) => {
         if (timerStatus === 'RUNNING' && (e.code === 'Escape' || e.code === 'Backspace')) {
             e.preventDefault();
             aplicarDNF(e);
             return;
         }
-
         if (e.code === 'Space' && telaAtiva === 'screen-timer' && !e.repeat) {
             iniciarPreparacao(e);
         }
@@ -300,42 +536,88 @@ function configurarTimerEvents() {
     });
 }
 
+// ==========================================
+// FUNÇÕES AUXILIARES DO TIMER E PENALIDADES
+// ==========================================
+
+function aplicarPlus2(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    if (historicoTempos.length === 0) return;
+    
+    const ultimoSolve = historicoTempos[0];
+    if (ultimoSolve.penalidade === 2) return; 
+
+    ultimoSolve.tempo += 2;
+    ultimoSolve.penalidade = 2;
+    localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoTempos));
+    
+    const display = document.getElementById('time-counter');
+    if (timerStatus === 'STOPPED' && display) {
+         display.innerText = ultimoSolve.tempo.toFixed(2) + " (+2)";
+         display.style.color = "var(--danger)";
+    }
+    
+    renderizarTelas();
+    document.getElementById('btn-timer-plus2')?.classList.add('hidden');
+}
+
 function aplicarDNF(e) {
     if (e) {
         if (e.preventDefault) e.preventDefault();
         if (e.stopPropagation) e.stopPropagation();
     }
     clearInterval(timerInterval);
+    clearInterval(inspectionInterval);
     
     const display = document.getElementById('time-counter');
-    const btnDnf = document.getElementById('btn-timer-dnf');
-    
     if (display) {
         display.innerText = "DNF";
         display.className = "timer-display stopped";
+        display.style.color = "var(--danger)";
     }
-    if (btnDnf) btnDnf.classList.add('hidden');
+    
+    document.getElementById('btn-timer-dnf')?.classList.add('hidden');
+    document.getElementById('btn-timer-plus2')?.classList.add('hidden');
+    
+    const ghost = document.getElementById('ghost-display');
+    if (ghost) ghost.innerText = "Solve abortado.";
+    
     timerStatus = 'STOPPED';
-}
-
-function carregarNovoTimer() {
-    currentScramble = gerarScrambleWCA();
-    document.getElementById('scramble-display').innerText = currentScramble;
-    document.getElementById('time-counter').innerText = "0.00";
-    document.getElementById('time-counter').className = "timer-display";
-    timerStatus = 'IDLE';
 }
 
 function pararTimer() {
     clearInterval(timerInterval);
-    const btnDnf = document.getElementById('btn-timer-dnf');
-    if (btnDnf) btnDnf.classList.add('hidden');
-
-    const finalTime = parseFloat(((performance.now() - timerStartTime) / 1000).toFixed(2));
-    document.getElementById('time-counter').innerText = finalTime.toFixed(2);
+    document.getElementById('btn-timer-dnf')?.classList.add('hidden');
     
+    if (penaltyInspecao === 'DNF') return;
+
+    let rawTime = parseFloat(((performance.now() - timerStartTime) / 1000).toFixed(2));
+    let finalTime = rawTime;
+    
+    if (penaltyInspecao === 2) {
+        finalTime += 2;
+    }
+
+    const display = document.getElementById('time-counter');
+    const ghost = document.getElementById('ghost-display');
+    if (display) display.className = "timer-display stopped";
     timerStatus = 'STOPPED';
-    document.getElementById('time-counter').className = "timer-display stopped";
+
+    if (display) display.innerText = finalTime.toFixed(2) + (penaltyInspecao === 2 ? " (+2)" : "");
+    
+    if (ghost && recordeFantasma !== Infinity) {
+         if (finalTime < recordeFantasma) {
+             ghost.innerText = `🔥 NOVO PB: ${finalTime.toFixed(2)}s!`;
+             ghost.style.color = "var(--warning)";
+             falarTexto("New Personal Best!");
+         } else {
+             const diferenca = (finalTime - recordeFantasma).toFixed(2);
+             ghost.innerText = `+${diferenca}s do seu PB`;
+             ghost.style.color = "var(--danger)";
+         }
+    }
+
+    document.getElementById('btn-timer-plus2')?.classList.remove('hidden');
 
     const agora = new Date();
     const dataFormatada = `${String(agora.getDate()).padStart(2, '0')}/${String(agora.getMonth() + 1).padStart(2, '0')} ${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
@@ -349,7 +631,8 @@ function pararTimer() {
         id: Date.now(),
         tempo: finalTime,
         data: dataFormatada,
-        scramble: currentScramble
+        scramble: currentScramble,
+        penalidade: penaltyInspecao
     };
 
     historicoTempos.unshift(novoTempo);
@@ -358,6 +641,23 @@ function pararTimer() {
     registrarSolveNoStreak();
     abrirModalVinculo(novoTempo.id);
     checarConquistasERecordes(finalTime, oldBest, isFirstRecord, oldAo5, oldAo12);
+}
+
+function carregarNovoTimer() {
+    currentScramble = gerarScrambleWCA();
+    document.getElementById('scramble-display').innerText = currentScramble;
+    const display = document.getElementById('time-counter');
+    display.innerText = "0.00";
+    display.className = "timer-display";
+    display.style.color = "";
+    
+    const ghost = document.getElementById('ghost-display');
+    if (ghost) {
+        ghost.innerText = "Toque na tela ou segure Espaço";
+        ghost.style.color = "var(--text-secondary)";
+    }
+    
+    timerStatus = 'IDLE';
 }
 
 function checarConquistasERecordes(finalTime, oldBest, isFirstRecord, oldAo5, oldAo12) {
@@ -784,7 +1084,10 @@ function gerarScrambleWCA() {
 function renderizarEstudo() {
     const container = document.getElementById('study-container');
     if (!container) return;
-    const casosNaoEstudados = listaCasos.filter(c => c.grupo === grupoAtivo && !obterDadosCaso(c.id).estudado);
+
+    // Filtra os casos ignorando os Skips
+    const casosDoGrupo = listaCasos.filter(c => c.grupo === grupoAtivo && !c.id.includes('-skip'));
+    const casosNaoEstudados = casosDoGrupo.filter(c => !obterDadosCaso(c.id).estudado);
 
     if (casosNaoEstudados.length === 0) {
         container.innerHTML = `
@@ -795,13 +1098,14 @@ function renderizarEstudo() {
         return;
     }
 
+    // Define qual caso mostrar (o primeiro da lista de não estudados)
     if (!casoEstudoAtual || casoEstudoAtual.grupo !== grupoAtivo || obterDadosCaso(casoEstudoAtual.id).estudado) {
         casoEstudoAtual = casosNaoEstudados[0];
     }
 
     const dados = obterDadosCaso(casoEstudoAtual.id);
-    const totalGrupo = listaCasos.filter(c => c.grupo === grupoAtivo).length;
-    const concluidosGrupo = listaCasos.filter(c => c.grupo === grupoAtivo && obterDadosCaso(c.id).estudado).length;
+    const totalGrupo = casosDoGrupo.length; // Agora mostra 57 para OLL e 21 para PLL
+    const concluidosGrupo = casosDoGrupo.filter(c => obterDadosCaso(c.id).estudado).length;
 
     container.innerHTML = `
         <div class="card-header" style="margin-bottom: 15px;">
@@ -830,7 +1134,13 @@ function renderizarEstudo() {
 function renderizarRevisao() {
     const container = document.getElementById('review-container');
     if (!container) return;
-    const casosEstudados = listaCasos.filter(c => c.grupo === grupoAtivo && obterDadosCaso(c.id).estudado);
+
+    // Filtra apenas casos estudados E que não sejam Skips
+    const casosEstudados = listaCasos.filter(c => 
+        c.grupo === grupoAtivo && 
+        obterDadosCaso(c.id).estudado && 
+        !c.id.includes('-skip')
+    );
 
     if (casosEstudados.length === 0) {
         container.innerHTML = `
@@ -882,7 +1192,8 @@ function renderizarGerenciador() {
     const listContainer = document.getElementById('manage-list-container');
     if (!statsBox || !listContainer) return;
 
-    const casosFiltrados = listaCasos.filter(c => c.grupo === grupoAtivo);
+    // Filtra casos do grupo ignorando skips
+    const casosFiltrados = listaCasos.filter(c => c.grupo === grupoAtivo && !c.id.includes('-skip'));
     const total = casosFiltrados.length;
     const concluidos = casosFiltrados.filter(c => obterDadosCaso(c.id).estudado).length;
 
@@ -995,11 +1306,22 @@ function renderizarGridCasosModal() {
     const container = document.getElementById('modal-casos-grid-container');
     if (!container) return;
     
-    const casosFiltrados = listaCasos.filter(c => c.grupo === grupoModalAtivo);
+    // 1. Filtra por grupo (OLL ou PLL) de acordo com a aba ativa
+    let casosFiltrados = listaCasos.filter(c => c.grupo === grupoModalAtivo);
+
+    // 2. ORDENAÇÃO: Força os casos de "Skip" a aparecerem sempre em primeiro lugar
+    casosFiltrados.sort((a, b) => {
+        const isSkipA = a.id.includes('-skip');
+        const isSkipB = b.id.includes('-skip');
+        if (isSkipA && !isSkipB) return -1; // 'a' (skip) sobe
+        if (!isSkipA && isSkipB) return 1;  // 'b' (skip) sobe
+        return 0; // mantém a ordem dos demais
+    });
+
     const solveAtual = historicoTempos.find(t => Number(t.id) === idSolveParaVincular);
 
+    // 3. Monta o HTML do Grid com as miniaturas e destaca o item que já estiver selecionado
     container.innerHTML = casosFiltrados.map(c => {
-        // Verifica se este caso específico está selecionado dentro do novo formato duplo
         let isSelected = false;
         if (solveAtual && solveAtual.casosDuplos) {
             if (grupoModalAtivo === 'OLL' && solveAtual.casosDuplos.oll === c.id) isSelected = true;
@@ -1008,12 +1330,13 @@ function renderizarGridCasosModal() {
 
         return `
             <div class="grid-caso-item ${isSelected ? 'selected' : ''}" data-vincular-caso-id="${c.id}">
-                <img src="imagens/${c.imagem}" onerror="this.src='imagens/oll-caso-01.png'">
+                <img src="imagens/${c.imagem}" onerror="this.src='imagens/oll-skip.png'">
                 <span>${c.nome}</span>
             </div>
         `;
     }).join('');
 
+    // 4. Aplica o comportamento de clique e as regras de transição/fechamento do Modal
     container.querySelectorAll('[data-vincular-caso-id]').forEach(el => {
         el.onclick = function(e) {
             e.stopPropagation();
@@ -1021,9 +1344,9 @@ function renderizarGridCasosModal() {
             
             let fechamentoAutomatico = false;
 
+            // Grava a seleção mantendo o histórico intacto
             historicoTempos = historicoTempos.map(t => {
                 if (Number(t.id) === idSolveParaVincular) {
-                    // Inicializa o objeto de casos duplos se ele ainda não existir no solve
                     const casos = t.casosDuplos || { oll: null, pll: null };
                     
                     if (grupoModalAtivo === 'OLL') {
@@ -1032,7 +1355,7 @@ function renderizarGridCasosModal() {
                         casos.pll = casoId;
                     }
 
-                    // CRITÉRIO DE FECHAMENTO: Se ambos (OLL e PLL) estiverem preenchidos, ativa o fechamento automático
+                    // Se o usuário preencheu ambos (OLL e PLL), o modal pode fechar sozinho
                     if (casos.oll && casos.pll) {
                         fechamentoAutomatico = true;
                     }
@@ -1044,11 +1367,12 @@ function renderizarGridCasosModal() {
             
             localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoTempos));
             
+            // Controle do fluxo do Modal baseado nas escolhas
             if (fechamentoAutomatico) {
-                // Se escolheu os dois, fecha o modal sozinho!
+                // Fechamento automático clássico ao concluir o ciclo OLL + PLL
                 document.getElementById('modal-vincular-caso').classList.add('hidden');
             } else {
-                // Se escolheu apenas o OLL, muda automaticamente para a aba de PLL para agilizar a segunda escolha!
+                // Avanço inteligente: se clicou em OLL, pula direto para PLL para poupar cliques
                 if (grupoModalAtivo === 'OLL') {
                     mudarGrupoModal('PLL');
                 } else {
@@ -1056,7 +1380,7 @@ function renderizarGridCasosModal() {
                 }
             }
             
-            // Atualiza os componentes de estatísticas e histórico na tela principal
+            // Sincroniza e redesenha todos os painéis estatísticos e lista de fundo
             if (typeof renderizarTelas === 'function') {
                 renderizarTelas();
             } else {
