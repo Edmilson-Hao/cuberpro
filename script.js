@@ -1631,7 +1631,30 @@ function iniciarServidorP2P() {
     // 2. INICIALIZA O PEERJS: Passando o ID curto customizado diretamente
     // Nota: Como o ID é curto, há uma chance remota de colisão global se outra pessoa no mundo 
     // usar o mesmo número no exato milissegundo. Para o seu ambiente de treino local, funciona perfeitamente.
-    meuPeer = new Peer(codigoCurto);
+    meuPeer = new Peer(codigoCurto, {
+        config: {
+            'iceServers': [
+                // Servidores STUN públicos da Google para mapeamento de rede
+                { url: 'stun:stun.l.google.com:19302' },
+                { url: 'stun:stun1.l.google.com:19302' },
+                { url: 'stun:stun2.l.google.com:19302' },
+                { url: 'stun:stun3.l.google.com:19302' },
+                { url: 'stun:stun4.l.google.com:19302' },
+                
+                // Servidores TURN gratuitos que funcionam como ponte quando Cabo -> Wi-Fi é bloqueado
+                {
+                    urls: 'turn:openrelay.metered.ca:443',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                },
+                {
+                    urls: 'turn:openrelay.metered.ca:80',
+                    username: 'openrelayproject',
+                    credential: 'openrelayproject'
+                }
+            ]
+        }
+    });
 
     meuPeer.on('open', (id) => {
         statusEl.innerText = "Status: Aguardando conexão...";
@@ -1824,5 +1847,33 @@ function processarPacoteSincronizacao(payload) {
     } catch (e) {
         console.error("Falha crítica ao processar dados WebRTC:", e);
         alert(`Erro ao aplicar os dados recebidos: ${e.message}`);
+    }
+}
+
+// Função rápida para exportar os treinos em formato de texto para mandar por WhatsApp/E-mail
+function exportarDadosParaTexto() {
+    const dados = {
+        cube_progresso: localStorage.getItem('cube_progresso'),
+        cube_historico_tempos: localStorage.getItem('cube_historico_tempos'),
+        cube_streak_dados: localStorage.getItem('cube_streak_dados')
+    };
+    const textoCodificado = btoa(JSON.stringify(dados)); // Transforma em linha única de texto
+    navigator.clipboard.writeText(textoCodificado);
+    alert("Código de backup copiado! Cole no outro dispositivo.");
+}
+
+// Função para colar o texto no outro dispositivo e restaurar tudo
+function importarDadosDeTexto() {
+    const codigo = prompt("Cole aqui o código de sincronização gerado no outro aparelho:");
+    if (!codigo) return;
+    try {
+        const dados = JSON.parse(atob(codigo));
+        if (dados.cube_progresso) localStorage.setItem('cube_progresso', dados.cube_progresso);
+        if (dados.cube_historico_tempos) localStorage.setItem('cube_historico_tempos', dados.cube_historico_tempos);
+        if (dados.cube_streak_dados) localStorage.setItem('cube_streak_dados', dados.cube_streak_dados);
+        alert("Dados importados com sucesso!");
+        window.location.reload();
+    } catch(e) {
+        alert("Código inválido.");
     }
 }
