@@ -21,11 +21,11 @@ const listaCasos = [
     { id: "oll-16", grupo: "OLL", nome: "Caso 16", algoritmo: "Rw U R' U' M U R U' R'", imagem: "oll-caso-16.png" },
     { id: "oll-17", grupo: "OLL", nome: "Caso 17", algoritmo: "R U R' U' M' U R U' Rw'", imagem: "oll-caso-17.png" },
     { id: "oll-18", grupo: "OLL", nome: "Caso 18", algoritmo: "R' U' R' F R F' U R", imagem: "oll-caso-18.png" },
-    { id: "oll-19", grupo: "OLL", nome: "Caso 19", algoritmo: "R U R2 U' R' F R U R U' F'", imagem: "oll-caso-19-.png" },
+    { id: "oll-19", grupo: "OLL", nome: "Caso 19", algoritmo: "R U R2 U' R' F R U R U' F'", imagem: "oll-caso-19.png" },
     { id: "oll-20", grupo: "OLL", nome: "Caso 20", algoritmo: "F R U' R' U' R U R' F'", imagem: "oll-caso-20.png" },
     { id: "oll-21", grupo: "OLL", nome: "Caso 21", algoritmo: "R U2 R2 F R F' R U2 R'", imagem: "oll-caso-21.png" },
     { id: "oll-22", grupo: "OLL", nome: "Caso 22", algoritmo: "R U R' U R' F R F' R U2 R'", imagem: "oll-caso-22.png" },
-    { id: "oll-23", grupo: "OLL", nome: "Caso 23", algoritmo: "R U R' U' R' F R2 U R' U' F'", imagem: "oll-caso-23-.png" },
+    { id: "oll-23", grupo: "OLL", nome: "Caso 23", algoritmo: "R U R' U' R' F R2 U R' U' F'", imagem: "oll-caso-23.png" },
     { id: "oll-24", grupo: "OLL", nome: "Caso 24", algoritmo: "Rw U R' U R U2 Rw'", imagem: "oll-caso-24.png" },
     { id: "oll-25", grupo: "OLL", nome: "Caso 25", algoritmo: "Rw' U' R U' R' U2 Rw", imagem: "oll-caso-25.png" },
     { id: "oll-26", grupo: "OLL", nome: "Caso 26", algoritmo: "Rw' R2 U R' U R U2 R' U M'", imagem: "oll-caso-26.png" },
@@ -1596,5 +1596,197 @@ function calcularDiagnosticoGargalos() {
             <span style="color: var(--success); font-weight: bold; display: block; margin-bottom: 4px;">✅ COMPORTAMENTO HOMOGÊNEO!</span>
             Seus algoritmos vinculados estão alinhados e equilibrados com a sua média global de <strong>${mediaGlobal.toFixed(2)}s</strong>. Continue praticando!
         `;
+    }
+}
+
+// ==========================================
+// MÓDULO DE SINCRONIZAÇÃO WEBRTC P2P (PEERJS)
+// ==========================================
+
+let meuPeer = null;
+let conexaoP2P = null;
+
+// Inicializa os eventos de clique ao carregar a página
+window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-gerar-qr')?.addEventListener('click', iniciarServidorP2P);
+    document.getElementById('btn-escanear-p2p')?.addEventListener('click', conectarDispositivoRemoto);
+});
+
+/**
+ * Fluxo do Receptor (Gera o ID e o QR Code)
+ */
+function iniciarServidorP2P() {
+    const statusEl = document.getElementById('p2p-status');
+    const qrContainer = document.getElementById('p2p-qr-container');
+    const qrDiv = document.getElementById('p2p-qrcode');
+    
+    statusEl.innerText = "Status: Inicializando canal...";
+    statusEl.className = "status-processando";
+
+    // Criando uma instância do PeerJS (Usa o servidor de sinalização público e gratuito deles)
+    meuPeer = new Peer();
+
+    // Quando o servidor de sinalização retorna nosso ID gerado
+    meuPeer.on('open', (id) => {
+        statusEl.innerText = "Status: Aguardando conexão...";
+        qrContainer.classList.remove('hidden');
+        
+        // Limpa QR Code anterior se houver
+        qrDiv.innerHTML = "";
+        
+        // Gera o QR Code contendo estritamente o ID do Peer
+        new QRCode(qrDiv, {
+            text: id,
+            width: 180,
+            height: 180,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    });
+
+    // Quando o outro dispositivo conectar com sucesso
+    meuPeer.on('connection', (conn) => {
+        conexaoP2P = conn;
+        configurarEventosConexao();
+    });
+
+    meuPeer.on('error', (err) => {
+        console.error("Erro no PeerJS:", err);
+        statusEl.innerText = `Status: Erro na inicialização.`;
+        statusEl.style.color = "var(--danger)";
+    });
+}
+
+/**
+ * Fluxo do Emissor (Lê o código/ID e conecta)
+ */
+function conectarDispositivoRemoto() {
+    // Nota: Para uma experiência de produção fluida, você pode integrar uma biblioteca como a 'html5-qrcode' 
+    // para abrir a câmera nativamente. Para a arquitetura base, usamos um prompt de texto simples do ID.
+    const idRemoto = prompt("Digite o código gerado no outro dispositivo (ou integre um leitor de câmera):");
+    
+    if (!idRemoto) return;
+
+    const statusEl = document.getElementById('p2p-status');
+    statusEl.innerText = "Status: Conectando diretamente...";
+    statusEl.className = "status-processando";
+
+    if (!meuPeer) meuPeer = new Peer();
+
+    // Estabelece o canal de dados P2P WebRTC
+    conexaoP2P = meuPeer.connect(idRemoto);
+    configurarEventosConexao();
+}
+
+/**
+ * Configuração dos canais de escuta e envio de pacotes WebRTC
+ */
+function configurarEventosConexao() {
+    const statusEl = document.getElementById('p2p-status');
+    
+    conexaoP2P.on('open', () => {
+        statusEl.innerText = "Status: 🟢 Conectado via P2P!";
+        statusEl.className = "status-conectado";
+        document.getElementById('p2p-qr-container')?.classList.add('hidden');
+
+        // IMPORTANTE: Quem conecta toma a iniciativa de enviar seus dados locais atuais
+        enviarDadosLocais();
+    });
+
+    // Trata a recepção do pacote de dados do outro dispositivo
+    conexaoP2P.on('data', (dadosRecebidos) => {
+        if (dadosRecebidos && dadosRecebidos.tipo === "CUBE_TRAINER_SYNC") {
+            processarPacoteSincronizacao(dadosRecebidos.payload);
+        }
+    });
+
+    conexaoP2P.on('close', () => {
+        statusEl.innerText = "Status: Conexão encerrada.";
+        statusEl.style.color = "var(--text-secondary)";
+    });
+}
+
+/**
+ * Serializa os dados do LocalStorage e despacha pelo canal WebRTC
+ */
+function enviarDadosLocais() {
+    if (!conexaoP2P) return;
+
+    const pacote = {
+        tipo: "CUBE_TRAINER_SYNC",
+        payload: {
+            progresso: localStorage.getItem('cube_progresso'),
+            historicoTempos: localStorage.getItem('cube_historico_tempos'),
+            streakDados: localStorage.getItem('cube_streak_dados')
+        }
+    };
+
+    conexaoP2P.send(pacote);
+    alert("Dados enviados com sucesso para o dispositivo emparelhado!");
+}
+
+/**
+ * Recebe o payload, faz o merge seguro ou substituição inteligente e recarrega as telas
+ */
+function processarPacoteSincronizacao(payload) {
+    try {
+        if (!payload.progresso || !payload.historicoTempos) {
+            throw new Error("Pacote corrompido ou incompleto.");
+        }
+
+        // Estratégia de Atualização: Para cronômetros de cubo mágico, o ideal é mesclar 
+        // os históricos para que o usuário não perca solves feitos separadamente em cada aparelho.
+        let historicoRemoto = JSON.parse(payload.historicoTempos) || [];
+        let historicoLocal = JSON.parse(localStorage.getItem('cube_historico_tempos')) || [];
+        
+        // Mesclar solves filtrando IDs duplicados para unicidade dos dados
+        let idsLocais = new Set(historicoLocal.map(t => t.id));
+        historicoRemoto.forEach(solve => {
+            if (!idsLocais.has(solve.id)) {
+                historicoLocal.push(solve);
+            }
+        });
+
+        // Ordenar histórico do mais recente ao mais antigo se aplicável
+        historicoLocal.sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
+
+        // Para o progresso de algoritmos (estudados/erros), aceita o de maior rendimento ou mescla os objetos
+        let progressoRemoto = JSON.parse(payload.progresso) || {};
+        let progressoLocal = JSON.parse(localStorage.getItem('cube_progresso')) || {};
+        
+        Object.keys(progressoRemoto).forEach(key => {
+            if (!progressoLocal[key]) {
+                progressoLocal[key] = progressoRemoto[key];
+            } else {
+                // Se algum marcou como estudado, mantém verdadeiro
+                progressoLocal[key].estudado = progressoLocal[key].estudado || progressoRemoto[key].estudado;
+                progressoLocal[key].erros = Math.max(progressoLocal[key].erros, progressoRemoto[key].erros);
+            }
+        });
+
+        // Atualizar as variáveis reativas globais do sistema
+        progresso = progressoLocal;
+        historicoTempos = historicoLocal;
+        if (payload.streakDados) {
+            let streakRemoto = JSON.parse(payload.streakDados);
+            if (streakRemoto.dias > streakDados.dias) {
+                streakDados = streakRemoto;
+                localStorage.setItem('cube_streak_dados', payload.streakDados);
+            }
+        }
+
+        // Commit final no LocalStorage
+        localStorage.setItem('cube_progresso', JSON.stringify(progresso));
+        localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoTempos));
+
+        alert("💥 Sincronização P2P Concluída! Seus tempos e metas foram unificados instantaneamente.");
+        
+        // Força a renderização das telas com os novos dados mesclados
+        renderizarTelas();
+
+    } catch (e) {
+        console.error("Falha ao processar dados WebRTC:", e);
+        alert("Erro ao aplicar os dados recebidos.");
     }
 }
