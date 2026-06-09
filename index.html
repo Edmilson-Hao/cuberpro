@@ -2,161 +2,116 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CubeTrainer Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards de Mandarim</title>
+    
     <link rel="manifest" href="manifest.json">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="#1a233a">
-    <meta name="apple-mobile-web-app-title" content="CubeTrainer Pro">
-    <link rel="apple-touch-icon" href="imagens/icon.png">
-    <link rel="apple-touch-startup-image" href="imagens/splash.png">
-    <meta name="theme-color" content="#121212">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mandarim App">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div id="app-container">
-    <header>
-        <h1>CubeTrainer Pro</h1>
-        <div class="header-actions">
-            <button class="btn-icon" id="theme-toggle" aria-label="Alternar Tema">🌓</button>
+    <div class="container">
+        <div class="stats-panel">
+            <div class="stat-item">
+                <span class="stat-label">Total de Cards</span>
+                <span id="stat-total" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Pendentes hoje</span>
+                <span id="stat-due" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Progresso Total</span>
+                <span id="progress-percent" class="stat-value">0%</span>
+            </div>
         </div>
-    </header>
 
-    <div class="group-selector" id="group-selector-container">
-        <button class="group-btn active" data-group="OLL">OLL</button>
-        <button class="group-btn" data-group="PLL">PLL</button>
-    </div>
+        <div class="progress-container" style="width: 100%; background: #334155; height: 6px; border-radius: 3px; margin-bottom: 24px; overflow: hidden;">
+            <div id="main-progress-bar" style="width: 0%; height: 100%; background: #10b981; transition: width 0.5s ease;"></div>
+        </div>
 
-    <main class="main-content" id="screen-study">
-        <div id="study-container" class="card"></div>
-    </main>
-
-    <main class="main-content hidden" id="screen-review">
-        <div id="review-container" class="card"></div>
-    </main>
-
-    <main class="main-content hidden" id="screen-timer">
-        <div id="timer-screen">
-            <div class="scramble-box" id="scramble-display">Gerando scramble...</div>
+        <div class="dashboard-grid">
             
-            <div class="timer-touch-zone" id="timer-touch-area">
-                <div id="record-badge" class="record-badge hidden"></div>
+            <div class="card-panel" id="card-panel">
+                <div class="card-header">
+                    <span id="card-level" class="level-badge">Nível 0</span>
+                    <span id="study-timer" class="timer-badge">00:00</span>
+                </div>
                 
-                <div class="timer-display" id="time-counter">0.00</div>
-                
-                <button id="btn-timer-dnf" class="btn btn-danger hidden" style="position: absolute; top: 20px; right: 20px; padding: 8px 16px; font-size: 0.9rem; max-width: 80px; z-index: 9999;">DNF</button>
-            </div>
+                <div class="card-body">
+                    <p id="instruction-text" class="instruction">Carregando...</p>
+                    <h1 id="main-display" class="hanzi-display">...</h1>
+                    <p id="sub-display" class="hint-display"></p>
+                </div>
 
-            <div class="timer-stats-row" style="flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 15px;">
-                <div class="stat-box">ao5: <span id="timer-ao5">-</span> <small id="trend-ao5"></small></div>
-                <div class="stat-box">ao12: <span id="timer-ao12">-</span> <small id="trend-ao12"></small></div>
-                <div class="stat-box">ao50: <span id="timer-ao50">-</span> <small id="trend-ao50"></small></div>
-                <div class="stat-box">ao100: <span id="timer-ao100">-</span> <small id="trend-ao100"></small></div>
-            </div>      
-        </div>
-    </main>
-
-    <main class="main-content hidden" id="screen-times">
-        <div class="stats-panel-premium" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
-            <div class="card" style="padding: 15px;">
-                <h3 style="font-size: 1rem; margin-bottom: 10px; display: flex; justify-content: space-between;">
-                    <span>📈 Média Global Eficiente</span>
-                    <small id="txt-global-average" style="color: var(--accent); font-weight: bold;"></small>
-                </h3>
-                <div id="svg-chart-wrapper" style="width: 100%; height: 120px; background: var(--bg-main); border-radius: 8px;"></div>
-            </div>
-
-            <div class="card" style="padding: 15px;">
-                <h3 style="font-size: 1rem; margin-bottom: 10px;">📊 Distribuição de Tempos (Consistência)</h3>
-                <div id="svg-bell-wrapper" style="width: 100%; height: 120px; background: var(--bg-main); border-radius: 8px;"></div>
-            </div>
-
-            <div class="card" style="padding: 15px; border-left: 4px solid var(--warning);">
-                <h3 style="font-size: 1rem; margin-bottom: 8px;">⚠️ Diagnóstico Inteligente de Gargalos</h3>
-                <div id="bottleneck-diagnostics" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
-                    Nenhum gargalo calculado. Vincule casos aos seus tempos para ativar o scanner artificial.
+                <div class="card-footer">
+                    <div id="input-zone" class="input-area"></div>
+                    <p id="feedback-text" class="feedback"></p>
                 </div>
             </div>
-        </div>
 
-        <div class="section-title" id="times-screen-averages" style="font-size: 0.8rem; text-align: center; margin-bottom: 10px; opacity: 0.8;"></div>
-        <div id="times-list-container"></div>
-    </main>
-
-    <div id="modal-vincular-caso" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;">
-        <div style="background: var(--bg-card); width: 100%; max-width: 450px; height: 80vh; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
-            <div style="padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-main);">
-                <h3 style="font-size: 1.1rem; color: var(--text-primary);">Vincular Caso ao Solve</h3>
-                <button id="btn-fechar-modal-caso" style="background: none; border: none; font-size: 1.5rem; color: var(--text-secondary); cursor: pointer;">&times;</button>
-            </div>
-            
-            <div style="display: flex; background: var(--bg-main); border-bottom: 1px solid var(--border);">
-                <button id="modal-tab-oll" style="flex: 1; padding: 10px; border: none; background: none; font-weight: bold; color: var(--accent); border-bottom: 2px solid var(--accent); cursor: pointer;">OLL</button>
-                <button id="modal-tab-pll" style="flex: 1; padding: 10px; border: none; background: none; font-weight: bold; color: var(--text-secondary); cursor: pointer;">PLL</button>
-            </div>
-
-            <div id="modal-casos-grid-container" style="flex: 1; overflow-y: auto; padding: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+            <div class="info-panel">
+                <h3 style="margin-top: 0; margin-bottom: 16px; color: #f8fafc; font-size: 1.1rem; border-bottom: 1px solid #334155; padding-bottom: 8px;">Distribuição por Nível</h3>
+                
+                <div style="margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #cbd5e1; margin-bottom: 2px;">
+                        <span>Nível 0 (Novos / Nunca Estudados)</span>
+                        <span id="count-l0">0</span>
+                    </div>
+                    <div style="width: 100%; background: #0f172a; height: 4px; border-radius: 2px;"><div id=\"bar-l0\" style="width: 0%; height: 100%; background: #64748b; border-radius: 2px; transition: width 0.3s;"></div></div>
                 </div>
-        </div>
-    </div>
 
-    <div id="screen-manage" class="main-content hidden">
-        <!-- Caixa de estatísticas existente -->
-        <div id="manage-stats" class="stats-card"></div>
-        
-        <!-- NOVO: Container de Ações de Backup do Sistema -->
-        <div style="margin: 15px; display: flex; gap: 10px;">
-            <div class="card-actions" style="margin-top: 20px; display: flex; gap: 10px;">
-                <button class="btn btn-primary" id="btn-export-json" style="flex: 1; padding: 12px; font-weight: bold;">Exportar JSON</button>
-                <button class="btn btn-secondary" id="btn-import-json" style="flex: 1; padding: 12px; font-weight: bold;">Importar JSON</button>
+                <div style="margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #cbd5e1; margin-bottom: 2px;">
+                        <span>Nível 1 (Reconhecimento)</span>
+                        <span id="count-l1">0</span>
+                    </div>
+                    <div style="width: 100%; background: #0f172a; height: 4px; border-radius: 2px;"><div id="bar-l1" style="width: 0%; height: 100%; background: #3b82f6; border-radius: 2px; transition: width 0.3s;"></div></div>
+                </div>
+
+                <div style="margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #cbd5e1; margin-bottom: 2px;">
+                        <span>Nível 2 (Fixação Fonética)</span>
+                        <span id="count-l2">0</span>
+                    </div>
+                    <div style="width: 100%; background: #0f172a; height: 4px; border-radius: 2px;"><div id="bar-l2" style="width: 0%; height: 100%; background: #0284c7; border-radius: 2px; transition: width 0.3s;"></div></div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #cbd5e1; margin-bottom: 2px;">
+                        <span>Nível 3 (Mandarim Visual)</span>
+                        <span id="count-l3">0</span>
+                    </div>
+                    <div style="width: 100%; background: #0f172a; height: 4px; border-radius: 2px;"><div id="bar-l3" style="width: 0%; height: 100%; background: #10b981; border-radius: 2px; transition: width 0.3s;"></div></div>
+                </div>
+
+                <h3 style="margin-bottom: 12px; color: #f8fafc; font-size: 1rem;">Métricas de Retenção</h3>
+                <div class="metrics-list" style="font-size: 0.85rem; color: #94a3b8; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="background: #1e293b; padding: 10px; border-radius: 6px; border: 1px solid #334155;">
+                        <div>Fator Eficácia (EF):</div>
+                        <strong id="stat-ef" style="color: #38bdf8; font-size: 1.1rem; display: block; margin-top: 4px;">2.5</strong>
+                    </div>
+                    <div style="background: #1e293b; padding: 10px; border-radius: 6px; border: 1px solid #334155;">
+                        <div>Dias Seguidos:</div>
+                        <strong id="stat-streak" style="color: #f59e0b; font-size: 1.1rem; display: block; margin-top: 4px;">0 🔥</strong>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; display: flex; gap: 10px;">
+                    <button id="btn-install" style="flex: 1; padding: 10px; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; display: none;">📥 Instalar App</button>
+                    <button id="btn-reset" style="flex: 1; padding: 10px; background: #b91c1c; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">🔄 Reset de Fábrica</button>
+                </div>
             </div>
-        </div>
 
-        <div id="manage-list-container"></div>
+        </div>
     </div>
 
-    <nav>
-        <button class="nav-btn active" data-target="screen-study">
-            <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5.49 12l-2.04-1.11L12 6.13l8.55 4.76-2.04 1.11L12 8.63 5.49 12zM12 17.13l-6.51-3.62-2.04 1.11L12 19.5l8.55-4.88-2.04-1.11L12 17.13z"/></svg>
-            Estudar
-        </button>
-        <button class="nav-btn" data-target="screen-review">
-            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
-            Revisar
-        </button>
-        <button class="nav-btn" data-target="screen-timer">
-            <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 2 22 6.48 22 12s-4.48-10-10-10zm-.01 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
-            Timer
-        </button>
-        <button class="nav-btn" data-target="screen-times">
-            <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-            Tempos
-        </button>
-        <button class="nav-btn" data-target="screen-manage">
-            <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3-1.57-3-3.5s1.07-3.5 3-3.5 3 1.57 3 3.5-1.07 3.5-3 3.5z"/></svg>
-            Gerenciar
-        </button>
-    </nav>
-</div>
-
-<!-- Splash Screen Corrigida (Preenchimento Total e Fim da Duplicidade) -->
-<div id="local-splash" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0f172a url('imagens/splash.png') no-repeat center center; background-size: cover; z-index: 9999; transition: opacity 0.4s ease;">
-</div>
-
-<script>
-    window.addEventListener('DOMContentLoaded', () => {
-        // Aguarda a renderização inicial dos componentes antes de desvanecer de forma suave
-        setTimeout(() => {
-            const splash = document.getElementById('local-splash');
-            if (splash) {
-                splash.style.opacity = '0';
-                setTimeout(() => splash.remove(), 400);
-            }
-        }, 1000); // Mantém tempo ideal de exibição sem gerar atraso artificial exaustivo
-    });
-</script>
-
-<script src="script.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
