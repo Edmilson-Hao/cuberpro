@@ -1615,6 +1615,22 @@ window.addEventListener('DOMContentLoaded', () => {
 /**
  * Fluxo do Receptor (Gera um ID curto aleatório, QR Code e copia para o clipboard)
  */
+// =================================================================
+// MÓDULO DE SINCRONIZAÇÃO WEBRTC P2P (VERSÃO ROBUSTA COM TURN SERVER)
+// =================================================================
+
+let meuPeer = null;
+let conexaoP2P = null;
+
+// Inicializa os eventos de clique ao carregar a página
+window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-gerar-qr')?.addEventListener('click', iniciarServidorP2P);
+    document.getElementById('btn-escanear-p2p')?.addEventListener('click', conectarDispositivoRemoto);
+});
+
+/**
+ * MÉTODO RECEBER: Fluxo do Receptor (Gera um ID curto aleatório, QR Code e copia para o clipboard)
+ */
 function iniciarServidorP2P() {
     const statusEl = document.getElementById('p2p-status');
     const qrContainer = document.getElementById('p2p-qr-container');
@@ -1622,112 +1638,22 @@ function iniciarServidorP2P() {
     const codigoTextoEl = document.getElementById('p2p-codigo-texto');
     const avisoCopiadoEl = document.getElementById('p2p-copiado-aviso');
     
+    if (!statusEl) return;
+
     statusEl.innerText = "Status: Inicializando canal...";
     statusEl.className = "status-processando";
 
-    // 1. GERA UM CÓDIGO CURTO: Número aleatório de 5 dígitos (entre 10000 e 99999)
+    // Gera um código curto numérico aleatório de 5 dígitos
     const codigoCurto = Math.floor(10000 + Math.random() * 90000).toString();
 
-    // 2. INICIALIZA O PEERJS: Passando o ID curto customizado diretamente
-    // Nota: Como o ID é curto, há uma chance remota de colisão global se outra pessoa no mundo 
-    // usar o mesmo número no exato milissegundo. Para o seu ambiente de treino local, funciona perfeitamente.
-    meuPeer = new Peer(codigoCurto, {
-        config: {
-            'iceServers': [
-                // Servidores STUN públicos da Google para mapeamento de rede
-                { url: 'stun:stun.l.google.com:19302' },
-                { url: 'stun:stun1.l.google.com:19302' },
-                { url: 'stun:stun2.l.google.com:19302' },
-                { url: 'stun:stun3.l.google.com:19302' },
-                { url: 'stun:stun4.l.google.com:19302' },
-                
-                // Servidores TURN gratuitos que funcionam como ponte quando Cabo -> Wi-Fi é bloqueado
-                {
-                    urls: 'turn:openrelay.metered.ca:443',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:openrelay.metered.ca:80',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                }
-            ]
-        }
-    });
-
-    meuPeer.on('open', (id) => {
-        statusEl.innerText = "Status: Aguardando conexão...";
-        qrContainer.classList.remove('hidden');
-        
-        // Exibe o código legível na tela
-        if (codigoTextoEl) codigoTextoEl.innerText = id;
-        
-        // Limpa QR Code anterior se houver e gera o novo baseado no ID curto
-        qrDiv.innerHTML = "";
-        new QRCode(qrDiv, {
-            text: id,
-            width: 160,
-            height: 160,
-            colorDark : "#000000",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
-        });
-
-        // 3. COPIA AUTOMATICAMENTE PARA A ÁREA DE TRANSFERÊNCIA
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(id).then(() => {
-                // Efeito visual temporário de "Copiado!"
-                if (avisoCopiadoEl) {
-                    avisoCopiadoEl.style.opacity = "1";
-                    setTimeout(() => { avisoCopiadoEl.style.opacity = "0"; }, 2500);
-                }
-            }).catch(err => console.log("Não foi possível auto-copiar: ", err));
-        }
-    });
-
-    // Quando o outro dispositivo conectar com sucesso
-    meuPeer.on('connection', (conn) => {
-        conexaoP2P = conn;
-        configurarEventosConexao();
-    });
-
-    meuPeer.on('error', (err) => {
-        console.error("Erro no PeerJS:", err);
-        // Se der erro de ID já em uso, tenta gerar outro automaticamente
-        if (err.type === 'unavailable-id') {
-            console.log("Código em uso, tentando gerar outro...");
-            iniciarServidorP2P();
-        } else {
-            statusEl.innerText = `Status: Erro na inicialização.`;
-            statusEl.style.color = "var(--danger)";
-        }
-    });
-}
-
-/**
- * Fluxo do Emissor (Lê o código/ID e conecta)
- */
-function conectarDispositivoRemoto() {
-    // Nota: Para uma experiência de produção fluida, você pode integrar uma biblioteca como a 'html5-qrcode' 
-    // para abrir a câmera nativamente. Para a arquitetura base, usamos um prompt de texto simples do ID.
-    const idRemoto = prompt("Digite o código gerado no outro dispositivo (ou integre um leitor de câmera):");
-    
-    if (!idRemoto) return;
-
-    const statusEl = document.getElementById('p2p-status');
-    statusEl.innerText = "Status: Conectando diretamente...";
-    statusEl.className = "status-processando";
-
-    if (!meuPeer) {
-        meuPeer = new Peer(undefined, {
+    // TENTATIVA ROBUSTA DE INSTANCIAÇÃO DO PEER (EVITA ERROS DEindexOf E CONFLITOS DE REDE HÍBRIDA)
+    try {
+        const peerConfig = {
             config: {
                 'iceServers': [
                     { url: 'stun:stun.l.google.com:19302' },
                     { url: 'stun:stun1.l.google.com:19302' },
                     { url: 'stun:stun2.l.google.com:19302' },
-                    { url: 'stun:stun3.l.google.com:19302' },
-                    { url: 'stun:stun4.l.google.com:19302' },
                     {
                         urls: 'turn:openrelay.metered.ca:443',
                         username: 'openrelayproject',
@@ -1740,10 +1666,119 @@ function conectarDispositivoRemoto() {
                     }
                 ]
             }
-        });
+        };
+        
+        // Inicializa com a configuração robusta contornando bloqueios de Cabo -> Wi-Fi
+        meuPeer = new Peer(codigoCurto, peerConfig);
+        
+    } catch (err) {
+        console.error("Erro ao instanciar o PeerJS:", err);
+        statusEl.innerText = "Status: Erro de compatibilidade de rede.";
+        statusEl.style.color = "var(--danger)";
+        return;
     }
 
-    // Estabelece o canal de dados P2P WebRTC
+    // Quando o servidor de sinalização valida e abre o nosso canal de ID curto
+    meuPeer.on('open', (id) => {
+        statusEl.innerText = "Status: Aguardando conexão...";
+        if (qrContainer) qrContainer.classList.remove('hidden');
+        
+        // Exibe o código legível na tela para digitação manual se necessário
+        if (codigoTextoEl) codigoTextoEl.innerText = id;
+        
+        // Limpa QR Code anterior se houver e gera o novo baseado no ID curto
+        if (qrDiv) {
+            qrDiv.innerHTML = "";
+            new QRCode(qrDiv, {
+                text: id,
+                width: 160,
+                height: 160,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        }
+
+        // Tenta copiar automaticamente para a área de transferência do sistema
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(id).then(() => {
+                if (avisoCopiadoEl) {
+                    avisoCopiadoEl.style.opacity = "1";
+                    setTimeout(() => { avisoCopiadoEl.style.opacity = "0"; }, 2500);
+                }
+            }).catch(err => console.log("Não foi possível auto-copiar o código: ", err));
+        }
+    });
+
+    // Quando o dispositivo emissor localiza e estabelece a conexão
+    meuPeer.on('connection', (conn) => {
+        conexaoP2P = conn;
+        configurarEventosConexao();
+    });
+
+    // Tratamento de falha na criação do ID curto
+    meuPeer.on('error', (err) => {
+        console.error("Erro no ciclo de vida do PeerJS:", err);
+        if (err.type === 'unavailable-id') {
+            console.log("Código em uso, tentando gerar outro...");
+            iniciarServidorP2P();
+        } else {
+            statusEl.innerText = `Status: Falha na inicialização da rede.`;
+            statusEl.style.color = "var(--danger)";
+        }
+    });
+}
+
+/**
+ * MÉTODO ENVIAR: Fluxo do Emissor (Pede o código gerado no computador e conecta passando pelas rotas TURN)
+ */
+function conectarDispositivoRemoto() {
+    const idRemoto = prompt("Digite o código de 5 dígitos gerado no outro dispositivo:");
+    if (!idRemoto) return;
+
+    const statusEl = document.getElementById('p2p-status');
+    if (statusEl) {
+        statusEl.innerText = "Status: Conectando via canais alternativos...";
+        statusEl.className = "status-processando";
+    }
+
+    // GARANTE QUE O EMISSOR TAMBÉM USE OS SERVIDORES PARA CRUZAREM A PONTE CABO/WI-FI
+    if (!meuPeer) {
+        try {
+            meuPeer = new Peer(undefined, {
+                config: {
+                    'iceServers': [
+                        { url: 'stun:stun.l.google.com:19302' },
+                        { url: 'stun:stun1.l.google.com:19302' },
+                        { url: 'stun:stun2.l.google.com:19302' },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:80',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        }
+                    ]
+                }
+            });
+        } catch (e) {
+            console.error("Erro ao instanciar o peer do emissor:", e);
+            if (statusEl) statusEl.innerText = "Status: Erro interno de inicialização.";
+            return;
+        }
+    }
+
+    // Se o emissor já estiver aberto, cria a conexão direta para o ID informado
+    if (meuPeer.destroyed) {
+        meuPeer = null;
+        alert("Ocorreu uma instabilidade na instância de rede. Por favor, clique novamente para reconectar.");
+        return;
+    }
+
+    // Estabelece o canal de dados P2P WebRTC usando o servidor TURN como ponte
     conexaoP2P = meuPeer.connect(idRemoto);
     configurarEventosConexao();
 }
