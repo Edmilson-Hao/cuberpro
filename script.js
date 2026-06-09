@@ -1603,9 +1603,6 @@ function calcularDiagnosticoGargalos() {
 // MÓDULO DE SINCRONIZAÇÃO WEBRTC P2P (PEERJS)
 // ==========================================
 
-let meuPeer = null;
-let conexaoP2P = null;
-
 // Inicializa os eventos de clique ao carregar a página
 window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-gerar-qr')?.addEventListener('click', iniciarServidorP2P);
