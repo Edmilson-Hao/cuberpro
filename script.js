@@ -1755,62 +1755,74 @@ function enviarDadosLocais() {
  */
 function processarPacoteSincronizacao(payload) {
     try {
-        if (!payload.progresso || !payload.historicoTempos) {
-            throw new Error("Pacote corrompido ou incompleto.");
+        if (!payload) {
+            throw new Error("O pacote de dados está vazio.");
         }
 
-        // Estratégia de Atualização: Para cronômetros de cubo mágico, o ideal é mesclar 
-        // os históricos para que o usuário não perca solves feitos separadamente em cada aparelho.
-        let historicoRemoto = JSON.parse(payload.historicoTempos) || [];
-        let historicoLocal = JSON.parse(localStorage.getItem('cube_historico_tempos')) || [];
+        // 1. TRATAMENTO DO HISTÓRICO DE TEMPOS (MANTÉM VAZIO SE NÃO EXISTIR, SEM TRAVAR)
+        let historicoRemoto = [];
+        try {
+            historicoRemoto = payload.historicoTempos ? JSON.parse(payload.historicoTempos) : [];
+            if (!Array.isArray(historicoRemoto)) historicoRemoto = [];
+        } catch (e) {
+            console.warn("Histórico remoto inválido ou vazio.");
+            historicoRemoto = [];
+        }
+
+        let historicoLocal = [];
+        try {
+            historicoLocal = localStorage.getItem('cube_historico_tempos') ? JSON.parse(localStorage.getItem('cube_historico_tempos')) : [];
+            if (!Array.isArray(historicoLocal)) historicoLocal = [];
+        } catch (e) {
+            historicoLocal = [];
+        }
         
-        // Mesclar solves filtrando IDs duplicados para unicidade dos dados
-        let idsLocais = new Set(historicoLocal.map(t => t.id));
+        let idsLocais = new Set(historicoLocal.map(t => t.id).filter(id => id !== undefined));
         historicoRemoto.forEach(solve => {
-            if (!idsLocais.has(solve.id)) {
+            if (solve && solve.id && !idsLocais.has(solve.id)) {
                 historicoLocal.push(solve);
             }
         });
 
-        // Ordenar histórico do mais recente ao mais antigo se aplicável
         historicoLocal.sort((a, b) => new Date(b.data || 0) - new Date(a.data || 0));
 
-        // Para o progresso de algoritmos (estudados/erros), aceita o de maior rendimento ou mescla os objetos
-        let progressoRemoto = JSON.parse(payload.progresso) || {};
-        let progressoLocal = JSON.parse(localStorage.getItem('cube_progresso')) || {};
+        // 2. TRATAMENTO DO PROGRESSO (MANTÉM VAZIO SE NÃO EXISTIR, SEM TRAVAR)
+        let progressoRemoto = {};
+        try {
+            progressoRemoto = payload.progresso ? JSON.parse(payload.progresso) : {};
+        } catch (e) {
+            progressoRemoto = {};
+        }
+
+        let progressoLocal = {};
+        try {
+            progressoLocal = localStorage.getItem('cube_progresso') ? JSON.parse(localStorage.getItem('cube_progresso')) : {};
+        } catch (e) {
+            progressoLocal = {};
+        }
         
         Object.keys(progressoRemoto).forEach(key => {
             if (!progressoLocal[key]) {
                 progressoLocal[key] = progressoRemoto[key];
             } else {
-                // Se algum marcou como estudado, mantém verdadeiro
-                progressoLocal[key].estudado = progressoLocal[key].estudado || progressoRemoto[key].estudado;
-                progressoLocal[key].erros = Math.max(progressoLocal[key].erros, progressoRemoto[key].erros);
+                progressoLocal[key].estudado = !!(progressoLocal[key].estudado || progressoRemoto[key].estudado);
+                progressoLocal[key].erros = Math.max(Number(progressoLocal[key].erros) || 0, Number(progressoRemoto[key].erros) || 0);
             }
         });
 
-        // Atualizar as variáveis reativas globais do sistema
-        progresso = progressoLocal;
-        historicoTempos = historicoLocal;
-        if (payload.streakDados) {
-            let streakRemoto = JSON.parse(payload.streakDados);
-            if (streakRemoto.dias > streakDados.dias) {
-                streakDados = streakRemoto;
-                localStorage.setItem('cube_streak_dados', payload.streakDados);
-            }
-        }
+        // 3. ATUALIZAÇÃO DO STORAGE LOCAL
+        localStorage.setItem('cube_progresso', JSON.stringify(progressoLocal));
+        localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoLocal));
 
-        // Commit final no LocalStorage
-        localStorage.setItem('cube_progresso', JSON.stringify(progresso));
-        localStorage.setItem('cube_historico_tempos', JSON.stringify(historicoTempos));
+        // Atualiza variáveis em memória do app, se existirem na raiz global
+        if (typeof progresso !== 'undefined') progresso = progressoLocal;
+        if (typeof historicoTempos !== 'undefined') historicoTempos = historicoLocal;
 
-        alert("💥 Sincronização P2P Concluída! Seus tempos e metas foram unificados instantaneamente.");
-        
-        // Força a renderização das telas com os novos dados mesclados
-        renderizarTelas();
+        alert("💥 Sincronização P2P Concluída com sucesso!");
+        window.location.reload(); // Recarrega para forçar o app a ler o localStorage limpo e reconstruído
 
     } catch (e) {
-        console.error("Falha ao processar dados WebRTC:", e);
-        alert("Erro ao aplicar os dados recebidos.");
+        console.error("Falha crítica ao processar dados WebRTC:", e);
+        alert(`Erro ao aplicar os dados recebidos: ${e.message}`);
     }
 }
