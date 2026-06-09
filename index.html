@@ -131,7 +131,14 @@
 
             <div id="p2p-qr-container" class="hidden" style="margin: 15px 0; text-align: center;">
                 <div id="p2p-qrcode" style="display: inline-block; padding: 10px; background: white; border-radius: 8px;"></div>
-                <p style="font-size: 0.8rem; margin-top: 5px; color: var(--warning);">Escaneie este código com o outro dispositivo.</p>
+                
+                <div style="margin-top: 12px;">
+                    <span style="font-size: 0.85rem; color: var(--text-secondary); display: block;">Código de Pareamento:</span>
+                    <strong id="p2p-codigo-texto" style="font-size: 1.4rem; color: var(--accent); letter-spacing: 2px; background: var(--bg-main); padding: 4px 12px; border-radius: 6px; border: 1px dashed var(--border); display: inline-block; margin-top: 4px;">000000</strong>
+                    <span id="p2p-copiado-aviso" style="font-size: 0.75rem; color: var(--success); display: block; margin-top: 3px; opacity: 0; transition: opacity 0.3s;">📋 Copiado para a área de transferência!</span>
+                </div>
+                
+                <p style="font-size: 0.8rem; margin-top: 10px; color: var(--text-secondary);">Escaneie o QR Code ou digite o código acima no outro dispositivo.</p>
             </div>
 
             <div id="p2p-status" style="font-weight: bold; text-align: center; color: var(--text-secondary);">

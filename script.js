@@ -1613,36 +1613,54 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 /**
- * Fluxo do Receptor (Gera o ID e o QR Code)
+ * Fluxo do Receptor (Gera um ID curto aleatório, QR Code e copia para o clipboard)
  */
 function iniciarServidorP2P() {
     const statusEl = document.getElementById('p2p-status');
     const qrContainer = document.getElementById('p2p-qr-container');
     const qrDiv = document.getElementById('p2p-qrcode');
+    const codigoTextoEl = document.getElementById('p2p-codigo-texto');
+    const avisoCopiadoEl = document.getElementById('p2p-copiado-aviso');
     
     statusEl.innerText = "Status: Inicializando canal...";
     statusEl.className = "status-processando";
 
-    // Criando uma instância do PeerJS (Usa o servidor de sinalização público e gratuito deles)
-    meuPeer = new Peer();
+    // 1. GERA UM CÓDIGO CURTO: Número aleatório de 5 dígitos (entre 10000 e 99999)
+    const codigoCurto = Math.floor(10000 + Math.random() * 90000).toString();
 
-    // Quando o servidor de sinalização retorna nosso ID gerado
+    // 2. INICIALIZA O PEERJS: Passando o ID curto customizado diretamente
+    // Nota: Como o ID é curto, há uma chance remota de colisão global se outra pessoa no mundo 
+    // usar o mesmo número no exato milissegundo. Para o seu ambiente de treino local, funciona perfeitamente.
+    meuPeer = new Peer(codigoCurto);
+
     meuPeer.on('open', (id) => {
         statusEl.innerText = "Status: Aguardando conexão...";
         qrContainer.classList.remove('hidden');
         
-        // Limpa QR Code anterior se houver
-        qrDiv.innerHTML = "";
+        // Exibe o código legível na tela
+        if (codigoTextoEl) codigoTextoEl.innerText = id;
         
-        // Gera o QR Code contendo estritamente o ID do Peer
+        // Limpa QR Code anterior se houver e gera o novo baseado no ID curto
+        qrDiv.innerHTML = "";
         new QRCode(qrDiv, {
             text: id,
-            width: 180,
-            height: 180,
+            width: 160,
+            height: 160,
             colorDark : "#000000",
             colorLight : "#ffffff",
             correctLevel : QRCode.CorrectLevel.H
         });
+
+        // 3. COPIA AUTOMATICAMENTE PARA A ÁREA DE TRANSFERÊNCIA
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(id).then(() => {
+                // Efeito visual temporário de "Copiado!"
+                if (avisoCopiadoEl) {
+                    avisoCopiadoEl.style.opacity = "1";
+                    setTimeout(() => { avisoCopiadoEl.style.opacity = "0"; }, 2500);
+                }
+            }).catch(err => console.log("Não foi possível auto-copiar: ", err));
+        }
     });
 
     // Quando o outro dispositivo conectar com sucesso
@@ -1653,8 +1671,14 @@ function iniciarServidorP2P() {
 
     meuPeer.on('error', (err) => {
         console.error("Erro no PeerJS:", err);
-        statusEl.innerText = `Status: Erro na inicialização.`;
-        statusEl.style.color = "var(--danger)";
+        // Se der erro de ID já em uso, tenta gerar outro automaticamente
+        if (err.type === 'unavailable-id') {
+            console.log("Código em uso, tentando gerar outro...");
+            iniciarServidorP2P();
+        } else {
+            statusEl.innerText = `Status: Erro na inicialização.`;
+            statusEl.style.color = "var(--danger)";
+        }
     });
 }
 
