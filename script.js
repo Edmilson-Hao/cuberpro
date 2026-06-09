@@ -1719,7 +1719,29 @@ function conectarDispositivoRemoto() {
     statusEl.innerText = "Status: Conectando diretamente...";
     statusEl.className = "status-processando";
 
-    if (!meuPeer) meuPeer = new Peer();
+    if (!meuPeer) {
+        meuPeer = new Peer(undefined, {
+            config: {
+                'iceServers': [
+                    { url: 'stun:stun.l.google.com:19302' },
+                    { url: 'stun:stun1.l.google.com:19302' },
+                    { url: 'stun:stun2.l.google.com:19302' },
+                    { url: 'stun:stun3.l.google.com:19302' },
+                    { url: 'stun:stun4.l.google.com:19302' },
+                    {
+                        urls: 'turn:openrelay.metered.ca:443',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    },
+                    {
+                        urls: 'turn:openrelay.metered.ca:80',
+                        username: 'openrelayproject',
+                        credential: 'openrelayproject'
+                    }
+                ]
+            }
+        });
+    }
 
     // Estabelece o canal de dados P2P WebRTC
     conexaoP2P = meuPeer.connect(idRemoto);
